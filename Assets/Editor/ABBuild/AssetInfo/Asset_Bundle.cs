@@ -37,13 +37,81 @@ namespace ABBuild
 
         public void AddParent(Asset_Bundle parent)
         {
-            this.parents.Add(parent);
+            if (parent == this || IsParentEarlyDep(parent) || parent == null)
+                return;
+
+            parents.Add(parent);
+            parent.AddChild(this);
+
+            parent.RemoveRepeatChildDep(this);
+            RemoveRepeatParentDep(parent);
+        }
+        private void AddChild(Asset_Bundle child)
+        {
+            childs.Add(child);
+        }
+        /// <summary>
+        /// 清除我父节点对我子节点的重复引用，保证树形结构
+        /// </summary>
+        /// <param name="targetParent"></param>
+        private void RemoveRepeatChildDep(Asset_Bundle targetChild)
+        {
+
+            List<Asset_Bundle> infolist = new List<Asset_Bundle>(parents);
+            for (int i = 0; i < infolist.Count; i++)
+            {
+                Asset_Bundle pinfo = infolist[i];
+                pinfo.RemoveChild(targetChild);
+                pinfo.RemoveRepeatChildDep(targetChild);
+            }
         }
 
-        public Object GetAsset()
+        /// <summary>
+        /// 清除我子节点被我父节点的重复引用，保证树形结构
+        /// </summary>
+        /// <param name="targetChild"></param>
+        private void RemoveRepeatParentDep(Asset_Bundle targetParent)
         {
-            Object asset = AssetDatabase.LoadMainAssetAtPath(assetPath);
-            return asset;
+
+            List<Asset_Bundle> infolist = new List<Asset_Bundle>(childs);
+            for (int i = 0; i < infolist.Count; i++)
+            {
+                Asset_Bundle cinfo = infolist[i];
+                cinfo.RemoveParent(targetParent);
+                cinfo.RemoveRepeatParentDep(targetParent);
+            }
+        }
+
+        private void RemoveChild(Asset_Bundle targetChild)
+        {
+            childs.Remove(targetChild);
+            targetChild.parents.Remove(this);
+        }
+        private void RemoveParent(Asset_Bundle parent)
+        {
+            parent.childs.Remove(this);
+            parents.Remove(parent);
+        }
+        /// <summary>
+        /// 如果父节点早已当此父节点为父节点
+        /// </summary>
+        /// <param name="targetParent"></param>
+        /// <returns></returns>
+        private bool IsParentEarlyDep(Asset_Bundle targetParent)
+        {
+            if (parents.Contains(targetParent))
+            {
+                return true;
+            }
+            var e = parents.GetEnumerator();
+            while (e.MoveNext())
+            {
+                if (e.Current.IsParentEarlyDep(targetParent))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public void SetAssetBundleName(int pieceThreshold)

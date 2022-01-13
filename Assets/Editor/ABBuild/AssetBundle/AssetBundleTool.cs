@@ -29,6 +29,37 @@ namespace ABBuild
             AssetDatabase.RemoveAssetBundleName(abInfo.assetBundles[index].name, true);
             abInfo.assetBundles.RemoveAt(index);
         }
+
+        /// <summary>
+        /// 根据扩展名判断是否是一个有效的bundle资源
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static bool isValidBundleAsset(FileInfo f)
+        {
+            if (f.FullName.Contains("Editor"))
+            {
+                return false;
+            }
+
+            if (f.FullName.Contains("StreamingAssets"))
+            {
+                return false;
+            }
+
+            if (f.FullName.Contains("Plugins"))
+            {
+                return false;
+            }
+            switch (f.Extension)
+            {
+                case ".cs":
+                case ".meta":
+                    return false;
+                default:
+                    return true;
+            }
+        }
         /// <summary>
         ///打包
         /// </summary>

@@ -83,7 +83,7 @@ namespace ABBuild
                 {
                     _assetBundle.Clear();
                 }
-                _assetBundle.Creat(Application.dataPath);
+                _assetBundle.Creat();
             }
 
             //当前未选中任一AB包的话，禁用之后的所有UI控件
@@ -122,7 +122,8 @@ namespace ABBuild
                 List<Asset_GUI> assets = _validAssets.GetCheckedAssets();
                 for (int i = 0; i < assets.Count; i++)
                 {
-                    _assetBundle.assetBundles[_currentAB].AddAsset(assets[i]);
+                    // var bundle_asset = _assetBundle.GetBundleAsset(assets[i].assetPath);
+                    // _assetBundle.assetBundles[_currentAB].AddAsset(bundle_asset);
                 }
 
                 ClearValidList();

@@ -25,9 +25,9 @@ namespace ABBuild
             
         }
 
-        public void AddAsset(AssetBase asset)
+        public void AddAsset(Asset_Bundle asset)
         {
-            
+            assets.Add(asset);
         }
     }
 }

@@ -100,7 +100,8 @@ namespace ABBuild
             int index = fullPath.IndexOf("Assets");
             if (index>=0)
             {
-                return fullPath.Substring(index);
+                string assetpath = fullPath.Substring(index);
+                return assetpath.Replace("\\","/");
             }
 
             return "";
