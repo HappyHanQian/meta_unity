@@ -161,6 +161,7 @@ namespace ABBuild
                     EditorUtility.DisplayDialog("提示", "ab包输出路径不能为空", "OK");
                     return;
                 }
+                
                 var option = BuildAssetBundleOptions.ChunkBasedCompression | BuildAssetBundleOptions.DeterministicAssetBundle;
                 AssetBundleTool.BuildAssetBundles(_buildPath, option, BuildTarget.StandaloneWindows64);
                 EditorUtility.DisplayDialog("提示", "打包完成", "OK");

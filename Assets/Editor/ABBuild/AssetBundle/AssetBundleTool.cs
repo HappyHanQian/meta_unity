@@ -70,6 +70,17 @@ namespace ABBuild
         public static AssetBundleManifest BuildAssetBundles(string outPath,BuildAssetBundleOptions options,BuildTarget buildTarget)
         {
             Debug.Log("开始打包");
+            // AssetBundleBuild[] bundles = new AssetBundleBuild[1];
+            // bundles[0] = new AssetBundleBuild()
+            // {
+            //     assetBundleName = "cube",
+            //     assetNames = new[]
+            //     {
+            //         "Assets/Prefab",
+            //         // "Assets/Shader/test.shader",
+            //         // "Assets/Mat/btn_groupinfo.png"
+            //     }
+            // };
             var manifest = BuildPipeline.BuildAssetBundles(outPath, options, buildTarget);
             return manifest;
         }

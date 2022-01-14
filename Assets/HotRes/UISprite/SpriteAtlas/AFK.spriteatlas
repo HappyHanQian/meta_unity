@@ -1,0 +1,94 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!687078895 &4343727234628468602
+SpriteAtlas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: AFK
+  serializedVersion: 2
+  m_EditorData:
+    serializedVersion: 2
+    textureSettings:
+      serializedVersion: 2
+      anisoLevel: 1
+      compressionQuality: 50
+      maxTextureSize: 2048
+      textureCompression: 0
+      filterMode: 1
+      generateMipMaps: 0
+      readable: 0
+      crunchedCompression: 0
+      sRGB: 1
+    platformSettings:
+    - serializedVersion: 3
+      m_BuildTarget: iPhone
+      m_MaxTextureSize: 1024
+      m_ResizeAlgorithm: 0
+      m_TextureFormat: 50
+      m_TextureCompression: 1
+      m_CompressionQuality: 50
+      m_CrunchedCompression: 0
+      m_AllowsAlphaSplitting: 0
+      m_Overridden: 1
+      m_AndroidETC2FallbackOverride: 0
+      m_ForceMaximumCompressionQuality_BC6H_BC7: 1
+    - serializedVersion: 3
+      m_BuildTarget: Android
+      m_MaxTextureSize: 1024
+      m_ResizeAlgorithm: 0
+      m_TextureFormat: 50
+      m_TextureCompression: 1
+      m_CompressionQuality: 50
+      m_CrunchedCompression: 0
+      m_AllowsAlphaSplitting: 0
+      m_Overridden: 1
+      m_AndroidETC2FallbackOverride: 0
+      m_ForceMaximumCompressionQuality_BC6H_BC7: 1
+    - serializedVersion: 3
+      m_BuildTarget: Standalone
+      m_MaxTextureSize: 1024
+      m_ResizeAlgorithm: 0
+      m_TextureFormat: 12
+      m_TextureCompression: 1
+      m_CompressionQuality: 50
+      m_CrunchedCompression: 0
+      m_AllowsAlphaSplitting: 0
+      m_Overridden: 1
+      m_AndroidETC2FallbackOverride: 0
+      m_ForceMaximumCompressionQuality_BC6H_BC7: 1
+    packingSettings:
+      serializedVersion: 2
+      padding: 4
+      blockOffset: 1
+      allowAlphaSplitting: 0
+      enableRotation: 0
+      enableTightPacking: 0
+    variantMultiplier: 1
+    packables:
+    - {fileID: 102900000, guid: 6c9e757637cec4f3cb64d53424bcdc6d, type: 3}
+    - {fileID: 102900000, guid: 98bdc082fc7ab4cabb7b45afe226d2de, type: 3}
+    bindAsDefault: 1
+  m_MasterAtlas: {fileID: 0}
+  m_PackedSprites:
+  - {fileID: 21300000, guid: b3afb1d4ef8dd431a973e9b4bfdfef48, type: 3}
+  - {fileID: 21300000, guid: dc68f4a50a8f94476b6f47c63c4c103d, type: 3}
+  - {fileID: 21300000, guid: cb499ba511a4d4548beb2f62fc0eac2e, type: 3}
+  - {fileID: 21300000, guid: ebcf3d860806543d483c759db5de4112, type: 3}
+  - {fileID: 21300000, guid: a207e4c7d012648b2ad8475bace61b82, type: 3}
+  - {fileID: 21300000, guid: 593c524aadaa041cc8e1da737aa0c205, type: 3}
+  - {fileID: 21300000, guid: 693fe91c0d6604eb79aeef9d3166bbde, type: 3}
+  - {fileID: 21300000, guid: 135a1bde5737544e5a37eba5b3776166, type: 3}
+  m_PackedSpriteNamesToIndex:
+  - icon_arrowUP
+  - btn_groupinfo
+  - btn_TemplateExport
+  - btn_PutCharacter_task
+  - btn_PhotoGraph
+  - icon_rare
+  - putBuildingNumBG
+  - icon_arrowDown
+  m_Tag: AFK
+  m_IsVariant: 0
+  m_IsPlaceholder: 0
