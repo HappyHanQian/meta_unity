@@ -21,6 +21,7 @@ namespace ABBuild
         /// </summary>
         public HashSet<Asset_Bundle> childs;
 
+        public string variant;
         /// <summary>
         /// 构造需要打包的资源结构
         /// </summary>
@@ -32,6 +33,7 @@ namespace ABBuild
             this.extension = extension;
             this.parents = new HashSet<Asset_Bundle>();
             this.childs = new HashSet<Asset_Bundle>();
+            this.variant = string.Empty;
         }
 
         public bool HasParent(Asset_Bundle parent)
@@ -122,20 +124,62 @@ namespace ABBuild
             return false;
         }
 
-        public void SetAssetBundleNameAndVariant(string abname, string variant)
+        public void SetAssetBundleNameAndVariant(string abname=null, string variant=null)
         {
-            AssetImporter ai = AssetImporter.GetAtPath(this.assetPath);
-            ai.SetAssetBundleNameAndVariant(abname,variant);
+            abname=string.IsNullOrEmpty(abname)?GetAbName():abname;
+            variant = string.IsNullOrEmpty(variant) ? GetAbVariant() : variant;
+            this.bundled = abname;
+            this.variant = variant;
         }
-        public void SetAssetBundleName(int pieceThreshold)
-        {
-            AssetImporter ai = AssetImporter.GetAtPath(this.assetPath);
-            string abname = this.assetPath.Replace("/", "_") + ".ab";
 
+        public string GetAbName()
+        {
+            if (!string.IsNullOrEmpty(this.bundled))
+            {
+                return this.bundled;
+            }
+            else
+            {
+                switch (this.parents.Count)
+                {
+                    // case 0:
+                    //     return this.assetPath.Replace("/", "_") + ".ab";
+                    case 1:
+                        var e = parents.GetEnumerator();
+                        e.MoveNext();
+                        return e.Current.GetAbName();
+                    default:
+                        return this.assetPath.Replace("/", "_") + ".ab";
+                }
+            }
+        }
+        public string GetAbVariant()
+        {
+            if (!string.IsNullOrEmpty(this.variant))
+            {
+                return this.variant;
+            }
+            else
+            {
+                if (this.parents.Count == 1)
+                {
+                    var e = parents.GetEnumerator();
+                    e.MoveNext();
+                    return e.Current.GetAbVariant();
+                }
+                else
+                {
+                    return this.variant;
+                }
+            }
+        }
+        public void SetAssetBundleNameBuRule(int pieceThreshold)
+        {
+            string abname = this.assetPath.Replace("/", "_") + ".ab";
             if (this.extension == ".spriteatlas")
             {
                 //是图集
-                ai.SetAssetBundleNameAndVariant(abname, string.Empty);
+                SetAssetBundleNameAndVariant(abname, string.Empty);
                 foreach (var child in this.childs)
                 {
                     child.SetAssetBundleNameAndVariant(abname, string.Empty);
@@ -146,7 +190,7 @@ namespace ABBuild
             {
                 
             }
-            if (ai is TextureImporter)
+            if (this.extension==".png"||this.extension==".jpg")
             {
                 //是图片资源
                 bool isInSptrite = false;
@@ -172,24 +216,25 @@ namespace ABBuild
                 // tai.SetAssetBundleNameAndVariant(tai.spritePackingTag + ".ab", null);
                 // Debug.Log("<color=#2E8A00>" + "设置ab，Image资源: " + this.assetPath + "</color>");
             }
-            //不是图集，而且大于阀值
-            if (this.parents.Count >= pieceThreshold)
-            {
-                ai.SetAssetBundleNameAndVariant(abname, string.Empty);
-                Debug.Log("<color=#6501AB>" + "设置ab，有多个引用: " + this.assetPath + "</color>");
-            }
-            //根节点
-            else if (this.parents.Count == 0)
-            {
-                ai.SetAssetBundleNameAndVariant(abname, string.Empty);
-                Debug.Log("<color=#025082>" + "设置ab，根资源ab: " + this.assetPath + "</color>");
-            }
-            else
-            {
-                //其余的子资源
-                ai.SetAssetBundleNameAndVariant(string.Empty, string.Empty);
-                Debug.Log("<color=#DBAF00>" + "清除ab， 仅有1个引用: " + this.assetPath + "</color>");
-            }
+            SetAssetBundleNameAndVariant();
+            // //不是图集，而且大于阀值
+            // if (this.parents.Count >= pieceThreshold)
+            // {
+            //     SetAssetBundleNameAndVariant();
+            //     Debug.Log("<color=#6501AB>" + "设置ab，有多个引用: " + this.assetPath + "</color>");
+            // }
+            // //根节点
+            // else if (this.parents.Count == 0)
+            // {
+            //     SetAssetBundleNameAndVariant();
+            //     Debug.Log("<color=#025082>" + "设置ab，根资源ab: " + this.assetPath + "</color>");
+            // }
+            // else
+            // {
+            //     //其余的子资源
+            //     
+            //     Debug.Log("<color=#DBAF00>" + "清除ab， 仅有1个引用: " + this.assetPath + "</color>");
+            // }
         }
     }
 }

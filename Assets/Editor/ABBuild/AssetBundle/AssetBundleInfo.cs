@@ -7,11 +7,13 @@ namespace ABBuild
     public class AssetBundleInfo
     {
         public string name;
+        public string variant;
         public List<Asset_Bundle> assets;
 
-        public AssetBundleInfo(string name)
+        public AssetBundleInfo(string name,string variant)
         {
             this.name = name;
+            this.variant = variant;
             this.assets = new List<Asset_Bundle>();
         }
 

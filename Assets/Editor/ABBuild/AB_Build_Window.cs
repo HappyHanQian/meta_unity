@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -29,7 +30,14 @@ namespace ABBuild
 
         private void InitAssetBundle()
         {
-            _assetBundle = new AssetBundleInfos();
+            if (_assetBundle == null)
+            {
+                _assetBundle = new AssetBundleInfos();
+            }
+            else
+            {
+                _assetBundle.Clear();
+            }
         }
 
         private GUIStyle s = new GUIStyle();
@@ -56,7 +64,8 @@ namespace ABBuild
         #region 标题栏
 
         //标记，用于标记当前选中的AB包索引
-        private int _currentAB = -1;
+        private string _currentAB = string.Empty;
+        private string _currentVar = string.Empty;
 
         //是否隐藏无效资源
         private bool _hideInvalidAsset = false;
@@ -75,19 +84,11 @@ namespace ABBuild
         {
             if (GUI.Button(new Rect(5, 5, 60, 15), "Create", "PreButton"))
             {
-                if (_assetBundle == null)
-                {
-                    _assetBundle = new AssetBundleInfos();
-                }
-                else
-                {
-                    _assetBundle.Clear();
-                }
-                _assetBundle.Creat();
+                Creat();
             }
 
             //当前未选中任一AB包的话，禁用之后的所有UI控件
-            GUI.enabled = _currentAB == -1 ? false : true;
+            GUI.enabled = _currentAB == string.Empty ? false : true;
             if (GUI.Button(new Rect(65, 5, 60, 15), "Rename", "PreButton"))
             {
                 _isRename = true;
@@ -95,21 +96,22 @@ namespace ABBuild
 
             if (GUI.Button(new Rect(125, 5, 60, 15), "Clear", "PreButton"))
             {
-                if (EditorUtility.DisplayDialog("Prompt", "Clear " + _assetBundle.assetBundles[_currentAB].name + " ？",
+                if (EditorUtility.DisplayDialog("Prompt", "Clear " + _assetBundle.bundlesDic[_currentAB][_currentVar].name + " ？",
                     "Yes", "No"))
                 {
-                    _assetBundle.assetBundles[_currentAB].ClearAsset();
+                    _assetBundle.bundlesDic[_currentAB][_currentVar].ClearAsset();
                 }
             }
 
             if (GUI.Button(new Rect(185, 5, 60, 15), "Delete", "PreButton"))
             {
                 if (EditorUtility.DisplayDialog("Prompt",
-                    "Delete " + _assetBundle.assetBundles[_currentAB].name + "？This will clear all assets！",
+                    "Delete " + _assetBundle.bundlesDic[_currentAB][_currentVar].name + "？This will clear all assets！",
                     "Yes", "No"))
                 {
-                    _assetBundle.DeleteAssetBundle(_currentAB);
-                    _currentAB = -1;
+                    _assetBundle.DeleteAssetBundle(_currentAB,_currentVar);
+                    _currentAB = string.Empty;
+                    _currentVar = string.Empty;
                 }
             }
 
@@ -161,9 +163,13 @@ namespace ABBuild
                     EditorUtility.DisplayDialog("提示", "ab包输出路径不能为空", "OK");
                     return;
                 }
-                
+
+                if (_assetBundle==null)
+                {
+                    Creat();
+                }
                 var option = BuildAssetBundleOptions.ChunkBasedCompression | BuildAssetBundleOptions.DeterministicAssetBundle;
-                AssetBundleTool.BuildAssetBundles(_buildPath, option, BuildTarget.StandaloneWindows64);
+                AssetBundleTool.BuildAssetBundles(_assetBundle,_buildPath, option, BuildTarget.StandaloneWindows64);
                 EditorUtility.DisplayDialog("提示", "打包完成", "OK");
             }
 
@@ -172,6 +178,13 @@ namespace ABBuild
             {
                 InitAsset();
             }
+        }
+
+        private void Creat()
+        {
+            InitAssetBundle();
+            _assetBundle.Creat();
+            _assets.SetBundled(_assetBundle.bundlesDic);
         }
 
         private void ClearValidList()
@@ -225,7 +238,7 @@ namespace ABBuild
             }
             else
             {
-                _currentAB = -1;
+                _currentAB = string.Empty;
             }
 
             //Begin和End中间就是我们要显示的控件列表，当然，如果AB包数量太少，我们的滚动区域还是不能小于视图区域
@@ -241,66 +254,71 @@ namespace ABBuild
         private void BundleGUI()
         {
             _ABViewHeight = 5;
-            for (int i = 0; i < _assetBundle.assetBundles.Count; i++)
+            foreach (var bundle_name in _assetBundle.bundlesDic.Keys)
             {
-                var bundle = _assetBundle.assetBundles[i];
-                string icon = bundle.assets.Count > 0 ? "Prefab Icon" : "d_Prefab On Icon";
-                if (i == _currentAB)
+                
+                foreach (var bundle in _assetBundle.bundlesDic[bundle_name].Values)
                 {
-                    GUI.Box(new Rect(0, _ABViewHeight, 240, 15), "", "OL SelectedRow");
-                    if (_isRename)
+                    string icon = bundle.assets.Count > 0 ? "Prefab Icon" : "d_Prefab On Icon";
+                    if (bundle_name == _currentAB&&bundle.variant==_currentVar)
                     {
-                        //重命名
-                        GUIContent content = EditorGUIUtility.IconContent(icon);
-                        content.text = "";
-                        GUI.Label(new Rect(5, _ABViewHeight, 230, 15), content, "PrebLabel");
-                        _renameValue = GUI.TextField(new Rect(40, _ABViewHeight, 140, 15), _renameValue);
-                        //重命名OK
-                        if (GUI.Button(new Rect(180, _ABViewHeight, 30, 15), "OK", "minibuttonleft"))
+                        //选中的bundle
+                        GUI.Box(new Rect(0, _ABViewHeight, 240, 15), "", "OL SelectedRow");
+                        if (_isRename)
                         {
-                            if (!string.IsNullOrEmpty(_renameValue))
+                            //重命名
+                            GUIContent content = EditorGUIUtility.IconContent(icon);
+                            content.text = "";
+                            GUI.Label(new Rect(5, _ABViewHeight, 230, 15), content, "PrebLabel");
+                            _renameValue = GUI.TextField(new Rect(40, _ABViewHeight, 140, 15), _renameValue);
+                            //重命名OK
+                            if (GUI.Button(new Rect(180, _ABViewHeight, 30, 15), "OK", "minibuttonleft"))
                             {
-                                if (!_assetBundle.IsExistName(_renameValue))
+                                if (!string.IsNullOrEmpty(_renameValue))
                                 {
-                                    bundle.RenameAssetBundle(_renameValue);
-                                    _renameValue = "";
-                                    _isRename = false;
-                                }
-                                else
-                                {
-                                    EditorUtility.DisplayDialog("提示", $"Already existed name:{_renameValue}", "OK");
+                                    if (!_assetBundle.IsExistName(_renameValue))
+                                    {
+                                        bundle.RenameAssetBundle(_renameValue);
+                                        _renameValue = "";
+                                        _isRename = false;
+                                    }
+                                    else
+                                    {
+                                        EditorUtility.DisplayDialog("提示", $"Already existed name:{_renameValue}", "OK");
+                                    }
                                 }
                             }
-                        }
 
-                        //重命名NO
-                        if (GUI.Button(new Rect(210, _ABViewHeight, 30, 15), "NO", "minibuttonleft"))
+                            //重命名NO
+                            if (GUI.Button(new Rect(210, _ABViewHeight, 30, 15), "NO", "minibuttonleft"))
+                            {
+                                _isRename = false;
+                            }
+                        }
+                        else
                         {
-                            _isRename = false;
+                            GUIContent content = EditorGUIUtility.IconContent(icon);
+                            content.text = bundle_name;
+                            GUI.Label(new Rect(5, _ABViewHeight, 230, 15), content, "PR PrefabLabel");
                         }
                     }
                     else
                     {
                         GUIContent content = EditorGUIUtility.IconContent(icon);
-                        content.text = _assetBundle.assetBundles[i].name;
-                        GUI.Label(new Rect(5, _ABViewHeight, 230, 15), content, "PR PrefabLabel");
+                        content.text = bundle.name;
+                        if (GUI.Button(new Rect(5, _ABViewHeight, 230, 15), content, "PR PrefabLabel"))
+                        {
+                            _currentAB = bundle_name;
+                            _currentVar = bundle.variant;
+                            _currentABAsset = -1;
+                            _isRename = false;
+                        }
                     }
-                }
-                else
-                {
-                    GUIContent content = EditorGUIUtility.IconContent(icon);
-                    content.text = bundle.name;
-                    if (GUI.Button(new Rect(5, _ABViewHeight, 230, 15), content, "PR PrefabLabel"))
-                    {
-                        _currentAB = i;
-                        _currentABAsset = -1;
-                        _isRename = false;
-                    }
-                }
 
-                _ABViewHeight += 20;
+                    _ABViewHeight += 20;
+
+                }
             }
-
             _ABViewHeight += 5;
         }
 
@@ -347,9 +365,9 @@ namespace ABBuild
         private void BundleAssetGUI()
         {
             _currentABViewHeight = 5;
-            if (_currentAB != -1)
+            if (_assetBundle.bundlesDic.ContainsKey(_currentAB)&&_assetBundle.bundlesDic[_currentAB].ContainsKey(_currentVar))
             {
-                AssetBundleInfo bundle = _assetBundle.assetBundles[_currentAB];
+                AssetBundleInfo bundle = _assetBundle.bundlesDic[_currentAB][_currentVar];
                 for (int i = 0; i < bundle.assets.Count; i++)
                 {
                     var asset = bundle.assets[i];

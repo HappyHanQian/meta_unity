@@ -23,11 +23,10 @@ namespace ABBuild
         /// <summary>
         /// 删除AB包
         /// </summary>
-        public static void DeleteAssetBundle(this AssetBundleInfos abInfo, int index)
+        public static void DeleteAssetBundle(this AssetBundleInfos abInfo, string abname,string variant)
         {
-            abInfo.assetBundles[index].ClearAsset();
-            AssetDatabase.RemoveAssetBundleName(abInfo.assetBundles[index].name, true);
-            abInfo.assetBundles.RemoveAt(index);
+            abInfo.bundlesDic[abname][variant].ClearAsset();
+            abInfo.bundlesDic.Remove(abname);
         }
 
         /// <summary>
@@ -67,7 +66,7 @@ namespace ABBuild
         /// <param name="options"></param>
         /// <param name="buildTarget"></param>
         /// <returns></returns>
-        public static AssetBundleManifest BuildAssetBundles(string outPath,BuildAssetBundleOptions options,BuildTarget buildTarget)
+        public static AssetBundleManifest BuildAssetBundles(AssetBundleInfos assetBundleInfos,string outPath,BuildAssetBundleOptions options,BuildTarget buildTarget)
         {
             Debug.Log("开始打包");
             // AssetBundleBuild[] bundles = new AssetBundleBuild[1];
@@ -81,7 +80,8 @@ namespace ABBuild
             //         // "Assets/Mat/btn_groupinfo.png"
             //     }
             // };
-            var manifest = BuildPipeline.BuildAssetBundles(outPath, options, buildTarget);
+            var bundles = assetBundleInfos.GetAssetBundleBuildInfo();
+            var manifest = BuildPipeline.BuildAssetBundles(outPath, bundles, options, buildTarget);
             return manifest;
         }
     }

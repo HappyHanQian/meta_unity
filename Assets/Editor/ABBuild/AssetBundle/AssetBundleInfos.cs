@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using ABBuild.Base;
 using UnityEditor;
@@ -8,33 +9,28 @@ namespace ABBuild
 {
     public class AssetBundleInfos
     {
-        public List<AssetBundleInfo> assetBundles;
+        /// <summary>
+        /// <name,<variant,bundleInfo>>
+        /// </summary>
+        public Dictionary<string, Dictionary<string, AssetBundleInfo>> bundlesDic;
         public Dictionary<string, Asset_Bundle> allAssets;
         string curRootAsset = string.Empty;
         float curProgress = 0f;
 
         public AssetBundleInfos()
         {
-            this.assetBundles = new List<AssetBundleInfo>();
-            allAssets = new Dictionary<string, Asset_Bundle>();
+            this.allAssets = new Dictionary<string, Asset_Bundle>();
+            this.bundlesDic = new Dictionary<string, Dictionary<string, AssetBundleInfo>>();
         }
 
         public bool IsExistName(string renameValue)
         {
-            for (int i = 0; i < assetBundles.Count; i++)
-            {
-                if (assetBundles[i].name == renameValue)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return bundlesDic.ContainsKey(renameValue);
         }
 
         public void Clear()
         {
-            assetBundles.Clear();
+            bundlesDic.Clear();
         }
 
         public Asset_Bundle GetBundleAsset(string assetpath)
@@ -53,26 +49,42 @@ namespace ABBuild
         public void Creat()
         {
             CreatAllAsset(Application.dataPath);
-
-            AssetDatabase.RemoveUnusedAssetBundleNames();
-            var bundlesNames = AssetDatabase.GetAllAssetBundleNames();
-            for (int i = 0; i < bundlesNames.Length; i++)
-            {
-                string name = bundlesNames[i];
-                AssetBundleInfo ab = new AssetBundleInfo(name);
-                var assets = AssetDatabase.GetAssetPathsFromAssetBundle(name);
-                for (int j = 0; j < assets.Length; j++)
-                {
-                    string fullpath = AssetTool.AssetPath2FullPath(assets[j]);
-                    FileInfo f = new FileInfo(fullpath);
-                    Asset_Bundle asset = new Asset_Bundle(fullpath, f.Name, f.Extension);
-                    ab.AddAsset(asset);
-                }
-
-                assetBundles.Add(ab);
-            }
+            CreatAssetBundls();
         }
 
+        private void CreatAssetBundls()
+        {
+            foreach (string assetsKey in allAssets.Keys)
+            {
+                var value = allAssets[assetsKey];
+                // if (string.IsNullOrEmpty(value.bundled))
+                // {
+                //     continue;
+                // }
+                if (bundlesDic.ContainsKey(value.bundled))
+                {
+                    var variant = bundlesDic[value.bundled];
+                    if (variant.ContainsKey(value.variant))
+                    {
+                        variant[value.variant].AddAsset(value);
+                    }
+                    else
+                    {
+                        AssetBundleInfo ab = new AssetBundleInfo(value.bundled,value.variant);
+                        ab.AddAsset(value);
+                        variant.Add(ab.variant,ab);
+                    }
+                }
+                else
+                {
+                    Dictionary<string, AssetBundleInfo> temp = new Dictionary<string, AssetBundleInfo>();
+                    AssetBundleInfo ab = new AssetBundleInfo(value.bundled, value.variant);
+                    ab.AddAsset(value);
+                    temp.Add(ab.variant,ab);
+                    bundlesDic.Add(ab.name,temp);
+                }
+            }
+        }
         private void CreatAllAsset(string path)
         {
             allAssets.Clear();
@@ -111,9 +123,8 @@ namespace ABBuild
                 EditorUtility.DisplayProgressBar("正在设置ABName", kv.Key, (float) setIndex / (float) allAssets.Count);
                 setIndex++;
                 Asset_Bundle a = kv.Value;
-                a.SetAssetBundleName(2);
+                a.SetAssetBundleNameBuRule(2);
             }
-
             EditorUtility.ClearProgressBar();
             AssetDatabase.SaveAssets();
         }
@@ -162,6 +173,37 @@ namespace ABBuild
                 EditorUtility.DisplayProgressBar(curRootAsset, assetpath, curProgress);
                 CreateDeps(info, self);
             }
+        }
+
+        public AssetBundleBuild[] GetAssetBundleBuildInfo()
+        {
+            if (bundlesDic.Count<=0)
+            {
+                Creat();
+            }
+            AssetBundleBuild[] bundles = new AssetBundleBuild[bundlesDic.Count];
+            int index = 0;
+            foreach (var bundleNames in bundlesDic)
+            {
+                foreach (var bundleInfo in bundleNames.Value)
+                {
+                    AssetBundleBuild b = new AssetBundleBuild();
+                    b.assetBundleName = bundleNames.Key;
+                    b.assetBundleVariant = bundleInfo.Key;
+                    b.addressableNames = new string[bundleInfo.Value.assets.Count];
+                    b.assetNames = new string[bundleInfo.Value.assets.Count];
+                    for (int i = 0; i < bundleInfo.Value.assets.Count; i++)
+                    {
+                        b.addressableNames[i] = bundleInfo.Value.assets[i].assetName;
+                        b.assetNames[i] = bundleInfo.Value.assets[i].assetPath;
+                    }
+
+                    bundles[index] = b;
+                    index++;
+                }
+            }
+
+            return bundles;
         }
     }
 }

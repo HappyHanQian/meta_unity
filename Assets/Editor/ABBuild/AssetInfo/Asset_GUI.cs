@@ -27,7 +27,6 @@ namespace ABBuild
                 return childAssetInfos_Dic.Values.ToList();
             }
         }
-
         /// <summary>
         /// 构造资源文件类型
         /// </summary>

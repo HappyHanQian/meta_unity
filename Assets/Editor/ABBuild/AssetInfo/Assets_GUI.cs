@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using ABBuild.Base;
 using UnityEngine;
 
@@ -52,6 +53,22 @@ namespace ABBuild
                 var newAssetInfo = assetGui.GetChild_GUI(name);
                 var newpath = path.Substring(index + 1);
                 return GetAssetInfo(newpath, newAssetInfo);
+            }
+        }
+
+        public void SetBundled(Dictionary<string, Dictionary<string, AssetBundleInfo>> assetBundleBundlesDic)
+        {
+            foreach (var bundlednames in assetBundleBundlesDic)
+            {
+                foreach (var bundleInfo in bundlednames.Value)
+                {
+                    foreach (var asset in bundleInfo.Value.assets)
+                    {
+                        string assetPath = asset.assetPath;
+                        var asset_gui = GetAssetInfo(assetPath);
+                        asset_gui.bundled = bundlednames.Key;
+                    }
+                }
             }
         }
     }
