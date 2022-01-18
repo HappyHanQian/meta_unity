@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -149,7 +150,7 @@ namespace ABBuild
                         e.MoveNext();
                         return e.Current.GetAbName();
                     default:
-                        return this.assetPath.Replace("/", "_") + ".ab";
+                        return this.parents.Count+"#"+ this.assetPath.Replace("/", "_").Replace(this.extension,"") + ".ab";
                 }
             }
         }
@@ -175,10 +176,11 @@ namespace ABBuild
         }
         public void SetAssetBundleNameBuRule(int pieceThreshold)
         {
-            string abname = this.assetPath.Replace("/", "_") + ".ab";
             if (this.extension == ".spriteatlas")
             {
                 //是图集
+                string dirName = Path.GetDirectoryName(this.assetPath);
+                string abname =this.assetPath.Replace("/","_").Replace(this.extension,"") + ".ab";
                 SetAssetBundleNameAndVariant(abname, string.Empty);
                 foreach (var child in this.childs)
                 {

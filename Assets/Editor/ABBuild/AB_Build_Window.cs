@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -15,7 +16,9 @@ namespace ABBuild
         {
             var window = GetWindow<AB_Build_Window>("AssetBundle");
             window.minSize = new Vector2(685.0f, 567.0f);
+            
             window.Show();
+            window._buildPath = Path.Combine(Path.GetDirectoryName(Application.dataPath),"Build", "AssetsBunde");
         }
 
         [UnityEditor.Callbacks.DidReloadScripts]
@@ -213,6 +216,7 @@ namespace ABBuild
         //区域视图滚动的位置
         private Vector2 _ABScroll;
 
+        private int _ABViewWidth;
         //区域高度标记,用来控制视图滚动量的
         private int _ABViewHeight = 0;
         /// <summary>
@@ -228,10 +232,11 @@ namespace ABBuild
             //区域的视图范围：左上角位置固定，宽度固定（240），高度为窗口高度的一半再减去标题栏高度（20），标题栏高度为什么是20？看一下标题栏的控件高度就行了呗，多余的是空隙之类的
             _ABViewRect = new Rect(5, 25, 240, (int) position.height / 2 - 20);
             //滚动的区域是根据当前显示的控件数量来确定的，如果显示的控件（AB包）太少，则滚动区域小于视图范围，则不生效，_ABViewHeight会根据AB包数量累加
-            _ABScrollRect = new Rect(5, 25, 240, _ABViewHeight);
+            _ABScrollRect = new Rect(5, 25, _ABViewWidth, _ABViewHeight);
             _ABScroll = GUI.BeginScrollView(_ABViewRect, _ABScroll, _ABScrollRect);
             GUI.BeginGroup(_ABScrollRect, "", "Box");
             _ABViewHeight = 0;
+            _ABViewWidth = 0;
             if (_assetBundle != null)
             {
                 BundleGUI();
@@ -247,6 +252,11 @@ namespace ABBuild
                 _ABViewHeight = (int) _ABViewRect.height;
             }
 
+            if (_ABViewWidth< _ABViewRect.width)
+            {
+                _ABViewWidth = (int)_ABViewRect.width;
+            }
+
             GUI.EndGroup();
             GUI.EndScrollView();
         }
@@ -256,20 +266,29 @@ namespace ABBuild
             _ABViewHeight = 5;
             foreach (var bundle_name in _assetBundle.bundlesDic.Keys)
             {
-                
+                int length = bundle_name.Length;
+                int width = length * 6 + 30;
+                if (_ABViewWidth < width)
+                {
+                    _ABViewWidth = width;
+                }
+            }
+            
+            foreach (var bundle_name in _assetBundle.bundlesDic.Keys)
+            {
                 foreach (var bundle in _assetBundle.bundlesDic[bundle_name].Values)
                 {
                     string icon = bundle.assets.Count > 0 ? "Prefab Icon" : "d_Prefab On Icon";
                     if (bundle_name == _currentAB&&bundle.variant==_currentVar)
                     {
                         //选中的bundle
-                        GUI.Box(new Rect(0, _ABViewHeight, 240, 15), "", "OL SelectedRow");
+                        GUI.Box(new Rect(0, _ABViewHeight, _ABViewWidth, 15), "", "OL SelectedRow");
                         if (_isRename)
                         {
                             //重命名
                             GUIContent content = EditorGUIUtility.IconContent(icon);
                             content.text = "";
-                            GUI.Label(new Rect(5, _ABViewHeight, 230, 15), content, "PrebLabel");
+                            GUI.Label(new Rect(5, _ABViewHeight, _ABViewWidth - 10, 15), content, "PrebLabel");
                             _renameValue = GUI.TextField(new Rect(40, _ABViewHeight, 140, 15), _renameValue);
                             //重命名OK
                             if (GUI.Button(new Rect(180, _ABViewHeight, 30, 15), "OK", "minibuttonleft"))
@@ -299,14 +318,14 @@ namespace ABBuild
                         {
                             GUIContent content = EditorGUIUtility.IconContent(icon);
                             content.text = bundle_name;
-                            GUI.Label(new Rect(5, _ABViewHeight, 230, 15), content, "PR PrefabLabel");
+                            GUI.Label(new Rect(5, _ABViewHeight, _ABViewWidth-10, 15), content, "PR PrefabLabel");
                         }
                     }
                     else
                     {
                         GUIContent content = EditorGUIUtility.IconContent(icon);
                         content.text = bundle.name;
-                        if (GUI.Button(new Rect(5, _ABViewHeight, 230, 15), content, "PR PrefabLabel"))
+                        if (GUI.Button(new Rect(5, _ABViewHeight, _ABViewWidth-10, 15), content, "PR PrefabLabel"))
                         {
                             _currentAB = bundle_name;
                             _currentVar = bundle.variant;
@@ -331,8 +350,10 @@ namespace ABBuild
         private Rect _currentABScrollRect;
         //区域视图滚动的位置
         private Vector2 _currentABScroll;
-        //区域高度标记，这里不用管它，是后续用来控制视图滚动量的
+        //区域高度标记
         private int _currentABViewHeight = 0;
+        //区域宽度标记
+        private int _currentABViewWidth = 0;
         /// <summary>
         /// 当前选中的资源索引
         /// </summary>
@@ -341,10 +362,11 @@ namespace ABBuild
         {
             //区域的视图范围：左上角位置固定在上一个区域的底部，宽度固定（240），高度为窗口高度的一半再减去空隙（15），上下都有空隙
             _currentABViewRect = new Rect(5, (int) position.height / 2 + 10, 240, (int) position.height / 2 - 15);
-            _currentABScrollRect = new Rect(5, (int) position.height / 2 + 10, 240, _currentABViewHeight);
+            _currentABScrollRect = new Rect(5, (int) position.height / 2 + 10, _currentABViewWidth, _currentABViewHeight);
             _currentABScroll = GUI.BeginScrollView(_currentABViewRect, _currentABScroll, _currentABScrollRect);
             GUI.BeginGroup(_currentABScrollRect, "", "Box");
             _currentABViewHeight = 0;
+            _currentABViewWidth = 0;
             if (_assetBundle != null)
             {
                 BundleAssetGUI();
@@ -356,6 +378,11 @@ namespace ABBuild
             if (_currentABViewHeight < _currentABViewRect.height)
             {
                 _currentABViewHeight = (int) _currentABViewRect.height;
+            }
+
+            if (_currentABViewWidth<_currentABViewRect.width)
+            {
+                _currentABViewWidth=(int)_currentABViewRect.width;
             }
 
             GUI.EndGroup();
@@ -371,14 +398,23 @@ namespace ABBuild
                 for (int i = 0; i < bundle.assets.Count; i++)
                 {
                     var asset = bundle.assets[i];
+                    int width = asset.assetName.Length * 6 + 30;
+                    if (_currentABViewWidth < width)
+                    {
+                        _currentABViewWidth = width;
+                    }
+                }
+                for (int i = 0; i < bundle.assets.Count; i++)
+                {
+                    var asset = bundle.assets[i];
                     if (i == _currentABAsset)
                     {
-                        GUI.Box(new Rect(0, _currentABViewHeight, 240, 15), "", "OL SelectedRow");
+                        GUI.Box(new Rect(0, _currentABViewHeight, _currentABViewWidth, 15), "", "OL SelectedRow");
                     }
 
                     GUIContent content = EditorGUIUtility.ObjectContent(null, asset.assetType);
                     content.text = asset.assetName;
-                    if (GUI.Button(new Rect(0, _currentABViewHeight, 205, 15), content, "PR PrefabLabel"))
+                    if (GUI.Button(new Rect(0, _currentABViewHeight, _currentABViewWidth, 15), content, "PR PrefabLabel"))
                     {
                         _currentABAsset = i;
                     }
