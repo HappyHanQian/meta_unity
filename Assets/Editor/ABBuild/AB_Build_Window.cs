@@ -431,11 +431,11 @@ namespace ABBuild
                     }
 
                     //在Button控件右方绘制减号Button控件，当点击时，删除此资源对象在当前选中的AB包中
-                    if (GUI.Button(new Rect(215, _currentABViewHeight, 20, 15), "", "OL Minus"))
-                    {
-                        bundle.RemoveAsset(asset);
-                        _currentABAsset = -1;
-                    }
+                    // if (GUI.Button(new Rect(215, _currentABViewHeight, 20, 15), "", "OL Minus"))
+                    // {
+                    //     bundle.RemoveAsset(asset);
+                    //     _currentABAsset = -1;
+                    // }
 
                     _currentABViewHeight += 20;
                 }

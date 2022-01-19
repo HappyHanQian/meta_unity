@@ -108,7 +108,7 @@ namespace ABBuild
         public static void CreaBuildFile(string path, AssetBundleInfos assetBundleInfos, AssetBundleManifest manifest)
         {
             manifest.GetAllAssetBundles();
-            string handlepath = Path.Combine(path, "BundleList.ab");
+            string handlepath = Path.Combine(path, "BundleList");
             Dictionary<string, Dictionary<string, int>> bundle_ids = new Dictionary<string, Dictionary<string, int>>();
             StringBuilder sb = new StringBuilder();
             var keys = assetBundleInfos.bundlesDic.Keys.ToArray();
@@ -154,7 +154,7 @@ namespace ABBuild
         public static void CreatBundleInfoFile(string path, AssetBundleInfos assetBundleInfos,
             Dictionary<string, Dictionary<string, int>> bundleDic)
         {
-            string handlepath = Path.Combine(path, "BundldInfo.ab");
+            string handlepath = Path.Combine(path, "BundldInfo");
             StringBuilder sb = new StringBuilder();
             var keys = assetBundleInfos.allAssets.Keys.ToArray();
             for (int i = 0; i < keys.Length; i++)

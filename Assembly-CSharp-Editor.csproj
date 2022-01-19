@@ -67,7 +67,7 @@
     <Compile Include="Assets\Editor\ABBuild\AssetInfo\Asset_GUI.cs" />
     <Compile Include="Assets\Editor\ABBuild\AssetInfo\Assets_GUI.cs" />
     <Compile Include="Assets\Editor\ABBuild\Base\IAssetInfos.cs" />
-    <Compile Include="Assets\Editor\GUIStyleViewer.cs" />
+    <Compile Include="Assets\Editor\GUIStyle\GUIStyleViewer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
