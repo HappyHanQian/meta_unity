@@ -141,6 +141,10 @@ namespace ABBuild
             }
             else
             {
+                if (AssetBundleTool.custom_rule.ContainsKey(this.assetName))
+                {
+                    return AssetBundleTool.custom_rule[this.assetName];
+                }
                 if (this.extension== ".spriteatlas")
                 {
                     //是图集

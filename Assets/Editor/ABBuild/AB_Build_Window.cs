@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 
@@ -8,24 +10,23 @@ namespace ABBuild
 {
     public class AB_Build_Window : EditorWindow
     {
-        private Assets_GUI _assets;
-        private AssetBundleInfos _assetBundle;
 
         [MenuItem("MyTools/AB_Build_Window")]
         static void OpenWindow()
         {
             var window = GetWindow<AB_Build_Window>("AssetBundle");
-            window.minSize = new Vector2(685.0f, 567.0f);
-            
+            window.minSize = new Vector2(685.0f, 600.0f);
             window.Show();
             window._buildPath = Path.Combine(Path.GetDirectoryName(Application.dataPath),"Build", "AssetsBunde");
         }
-
         [UnityEditor.Callbacks.DidReloadScripts]
         static void OnScriptReloaded()
         {
             
         }
+        private Assets_GUI _assets;
+        private AssetBundleInfos _assetBundle;
+        private Dictionary<string, string> customBundle = new Dictionary<string, string>();
         private void InitAsset()
         {
             _assets = new Assets_GUI();
@@ -81,16 +82,82 @@ namespace ABBuild
 
         //打包平台
         private BuildTarget _buildTarget = BuildTarget.StandaloneWindows;
+        //将要增加到bundle包中的资源
         private List<Asset_GUI> _validAssets;
 
         private void TitleGUI()
         {
-            if (GUI.Button(new Rect(5, 5, 60, 15), "Create", "PreButton"))
+            int num = _assetBundle == null ? 0 : _assetBundle.totalBundleNum;
+            GUI.Label(new Rect(5, 5, 115, 15), $"bundles count:{num}", "CenteredLabel");
+            num = string.IsNullOrEmpty(_currentAB) || _assetBundle == null
+                ? 0
+                : _assetBundle.bundlesDic[_currentAB][_currentVar].assets.Count;
+            GUI.Label(new Rect(125, 5, 115, 15), $"assets count:{num}", "CenteredLabel");
+            if (GUI.Button(new Rect(5, 25, 240, 15), "Create", "PreButton"))
             {
                 Creat();
             }
-
             //当前未选中任一AB包的话，禁用之后的所有UI控件
+            // EditorBundle();
+
+            //取消UI控件的禁用
+            GUI.enabled = true;
+
+            if (GUI.Button(new Rect(250, 5, 60, 15), "Open", "PreButton"))
+            {
+                if (!string.IsNullOrEmpty(_buildPath))
+                {
+                    EditorUtility.OpenFilePanel("AB包", _buildPath, "");
+                }
+            }
+
+            if (GUI.Button(new Rect(310, 5, 60, 15), "Browse", "PreButton"))
+            {
+                _buildPath = EditorUtility.OpenFolderPanel("选择打包路径", _buildPath, "");
+            }
+            GUI.Label(new Rect(370, 5, 70, 15), "Build Path:");
+            _buildPath = GUI.TextField(new Rect(440, 5, 300, 15), _buildPath);
+            GUI.Label(new Rect((int) position.width - 245, 5, 40, 15), "平台:", "PreLabel");
+            _buildTarget = (BuildTarget) EditorGUI.EnumPopup(new Rect((int) position.width - 205, 5, 150, 15), _buildTarget,
+                    "PreDropDown");
+            if (GUI.Button(new Rect((int) position.width - 55, 5, 50, 15), "Build", "PreButton"))
+            {
+                if (string.IsNullOrEmpty(_buildPath))
+                {
+                    EditorUtility.DisplayDialog("提示", "ab包输出路径不能为空", "OK");
+                    return;
+                }
+
+                if (_assetBundle==null)
+                {
+                    Creat();
+                }
+                var option = BuildAssetBundleOptions.ChunkBasedCompression | BuildAssetBundleOptions.DeterministicAssetBundle;
+                AssetBundleTool.BuildAssetBundles(_assetBundle,_buildPath, option, _buildTarget);
+                EditorUtility.DisplayDialog("提示", "打包完成", "OK");
+            }
+            _hideInvalidAsset = GUI.Toggle(new Rect(250, 25, 100, 15), _hideInvalidAsset, "Hide Invalid");
+            _hideBundleAsset = GUI.Toggle(new Rect(350, 25, 100, 15), _hideBundleAsset, "Hide Bundled");
+            //刷新按钮
+            GUIContent content = EditorGUIUtility.IconContent("d_RotateTool");
+            if (GUI.Button(new Rect((int) (position.width - 25), 25, 20, 20), content, "PreButton"))
+            {
+                //刷新按钮
+                InitAsset();
+            }
+        }
+        /// <summary>
+        /// GUI上的creat按钮事件
+        /// </summary>
+        private void Creat()
+        {
+            InitAssetBundle();
+            _assetBundle.Creat();
+            _assets.SetBundled(_assetBundle.bundlesDic);
+        }
+
+        private void EditorBundle()
+        {
             GUI.enabled = _currentAB == string.Empty ? false : true;
             if (GUI.Button(new Rect(65, 5, 60, 15), "Rename", "PreButton"))
             {
@@ -112,7 +179,7 @@ namespace ABBuild
                     "Delete " + _assetBundle.bundlesDic[_currentAB][_currentVar].name + "？This will clear all assets！",
                     "Yes", "No"))
                 {
-                    _assetBundle.DeleteAssetBundle(_currentAB,_currentVar);
+                    _assetBundle.DeleteAssetBundle(_currentAB, _currentVar);
                     _currentAB = string.Empty;
                     _currentVar = string.Empty;
                 }
@@ -120,7 +187,7 @@ namespace ABBuild
 
             if (GUI.Button(new Rect(250, 5, 100, 15), "Add Assets", "PreButton"))
             {
-                if (_validAssets==null)
+                if (_validAssets == null)
                 {
                     return;
                 }
@@ -133,63 +200,7 @@ namespace ABBuild
 
                 ClearValidList();
             }
-
-            //取消UI控件的禁用
-            GUI.enabled = true;
-
-            _hideInvalidAsset = GUI.Toggle(new Rect(360, 5, 100, 15), _hideInvalidAsset, "Hide Invalid");
-            _hideBundleAsset = GUI.Toggle(new Rect(460, 5, 100, 15), _hideBundleAsset, "Hide Bundled");
-
-            if (GUI.Button(new Rect(250, 25, 60, 15), "Open", "PreButton"))
-            {
-                if (!string.IsNullOrEmpty(_buildPath))
-                {
-                    EditorUtility.OpenFilePanel("AB包", _buildPath, "");
-                }
-            }
-
-            if (GUI.Button(new Rect(310, 25, 60, 15), "Browse", "PreButton"))
-            {
-                _buildPath = EditorUtility.OpenFolderPanel("选择打包路径", _buildPath, "");
-            }
-
-            GUI.Label(new Rect(370, 25, 70, 15), "Build Path:");
-            _buildPath = GUI.TextField(new Rect(440, 25, 300, 15), _buildPath);
-            GUI.Label(new Rect((int) position.width - 245, 5, 40, 15), "平台:", "PreLabel");
-            BuildTarget buildTarget =
-                (BuildTarget) EditorGUI.EnumPopup(new Rect((int) position.width - 205, 5, 150, 15), _buildTarget,
-                    "PreDropDown");
-            if (GUI.Button(new Rect((int) position.width - 55, 5, 50, 15), "Build", "PreButton"))
-            {
-                if (string.IsNullOrEmpty(_buildPath))
-                {
-                    EditorUtility.DisplayDialog("提示", "ab包输出路径不能为空", "OK");
-                    return;
-                }
-
-                if (_assetBundle==null)
-                {
-                    Creat();
-                }
-                var option = BuildAssetBundleOptions.ChunkBasedCompression | BuildAssetBundleOptions.DeterministicAssetBundle;
-                AssetBundleTool.BuildAssetBundles(_assetBundle,_buildPath, option, BuildTarget.StandaloneWindows64);
-                EditorUtility.DisplayDialog("提示", "打包完成", "OK");
-            }
-
-            GUIContent content = EditorGUIUtility.IconContent("d_RotateTool");
-            if (GUI.Button(new Rect((int) (position.width - 25), 25, 20, 20), content, "PreButton"))
-            {
-                InitAsset();
-            }
         }
-
-        private void Creat()
-        {
-            InitAssetBundle();
-            _assetBundle.Creat();
-            _assets.SetBundled(_assetBundle.bundlesDic);
-        }
-
         private void ClearValidList()
         {
             if (_validAssets==null)
@@ -230,9 +241,9 @@ namespace ABBuild
         private void AssetBundleGUI()
         {
             //区域的视图范围：左上角位置固定，宽度固定（240），高度为窗口高度的一半再减去标题栏高度（20），标题栏高度为什么是20？看一下标题栏的控件高度就行了呗，多余的是空隙之类的
-            _ABViewRect = new Rect(5, 25, 240, (int) position.height / 2 - 20);
+            _ABViewRect = new Rect(5, 45, 240, (int) position.height / 2 - 40);
             //滚动的区域是根据当前显示的控件数量来确定的，如果显示的控件（AB包）太少，则滚动区域小于视图范围，则不生效，_ABViewHeight会根据AB包数量累加
-            _ABScrollRect = new Rect(5, 25, _ABViewWidth, _ABViewHeight);
+            _ABScrollRect = new Rect(5, 45, _ABViewWidth, _ABViewHeight);
             _ABScroll = GUI.BeginScrollView(_ABViewRect, _ABScroll, _ABScrollRect);
             GUI.BeginGroup(_ABScrollRect, "", "Box");
             _ABViewHeight = 0;

@@ -16,7 +16,7 @@ namespace ABBuild
         public Dictionary<string, Asset_Bundle> allAssets;
         string curRootAsset = string.Empty;
         float curProgress = 0f;
-
+        public int  totalBundleNum;
         public AssetBundleInfos()
         {
             this.allAssets = new Dictionary<string, Asset_Bundle>();
@@ -54,6 +54,7 @@ namespace ABBuild
 
         private void CreatAssetBundls()
         {
+            totalBundleNum = 0;
             foreach (string assetsKey in allAssets.Keys)
             {
                 var value = allAssets[assetsKey];
@@ -73,6 +74,7 @@ namespace ABBuild
                         AssetBundleInfo ab = new AssetBundleInfo(value.bundled,value.variant);
                         ab.AddAsset(value);
                         variant.Add(ab.variant,ab);
+                        totalBundleNum++;
                     }
                 }
                 else
@@ -82,6 +84,7 @@ namespace ABBuild
                     ab.AddAsset(value);
                     temp.Add(ab.variant,ab);
                     bundlesDic.Add(ab.name,temp);
+                    totalBundleNum++;
                 }
             }
         }
@@ -116,7 +119,7 @@ namespace ABBuild
             }
 
             EditorUtility.ClearProgressBar();
-
+            AssetBundleTool.ReadCustom();
             int setIndex = 0;
             foreach (KeyValuePair<string, Asset_Bundle> kv in allAssets)
             {
@@ -174,7 +177,6 @@ namespace ABBuild
                 CreateDeps(info, self);
             }
         }
-
         public AssetBundleBuild[] GetAssetBundleBuildInfo()
         {
             if (bundlesDic.Count<=0)
