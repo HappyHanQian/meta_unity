@@ -123,7 +123,7 @@ namespace ABBuild
                 EditorUtility.DisplayProgressBar("正在设置ABName", kv.Key, (float) setIndex / (float) allAssets.Count);
                 setIndex++;
                 Asset_Bundle a = kv.Value;
-                a.SetAssetBundleNameBuRule(2);
+                a.SetAssetBundleNameBuRule();
             }
             EditorUtility.ClearProgressBar();
             AssetDatabase.SaveAssets();

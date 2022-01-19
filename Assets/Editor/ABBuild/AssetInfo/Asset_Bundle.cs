@@ -141,6 +141,12 @@ namespace ABBuild
             }
             else
             {
+                if (this.extension== ".spriteatlas")
+                {
+                    //是图集
+                    string abname = "0#" + this.assetPath.Replace("/", "_").Replace(this.extension, "");
+                    return abname;
+                }
                 switch (this.parents.Count)
                 {
                     // case 0:
@@ -150,7 +156,22 @@ namespace ABBuild
                         e.MoveNext();
                         return e.Current.GetAbName();
                     default:
-                        return this.parents.Count+"#"+ this.assetPath.Replace("/", "_").Replace(this.extension,"") + ".ab";
+                        int count = this.parents.Count;
+                        int min = AssetBundleTool.pieceThreshold[0];
+                        string dir_name = Path.GetDirectoryName(this.assetPath);
+                        for (int i = 1; i < AssetBundleTool.pieceThreshold.Length; i++)
+                        {
+                            int cur = AssetBundleTool.pieceThreshold[i];
+                            if (count<cur)
+                            {
+                                return min + "#" + dir_name.Replace("/", "_").Replace("\\", "_");
+                            }
+                            else
+                            {
+                                min = cur;
+                            }
+                        }
+                        return min + "#" + dir_name.Replace("/", "_").Replace("\\", "_");
                 }
             }
         }
@@ -162,7 +183,11 @@ namespace ABBuild
             }
             else
             {
-                if (this.parents.Count == 1)
+                if (this.extension== ".spriteatlas")
+                {
+                    return string.Empty;
+                }
+                if (this.parents.Count == 1) 
                 {
                     var e = parents.GetEnumerator();
                     e.MoveNext();
@@ -174,17 +199,15 @@ namespace ABBuild
                 }
             }
         }
-        public void SetAssetBundleNameBuRule(int pieceThreshold)
+        public void SetAssetBundleNameBuRule()
         {
             if (this.extension == ".spriteatlas")
             {
                 //是图集
-                string dirName = Path.GetDirectoryName(this.assetPath);
-                string abname =this.assetPath.Replace("/","_").Replace(this.extension,"") + ".ab";
-                SetAssetBundleNameAndVariant(abname, string.Empty);
+                SetAssetBundleNameAndVariant();
                 foreach (var child in this.childs)
                 {
-                    child.SetAssetBundleNameAndVariant(abname, string.Empty);
+                    child.SetAssetBundleNameAndVariant(GetAbName(), GetAbVariant());
                 }
                 return;
             }
