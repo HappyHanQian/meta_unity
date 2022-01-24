@@ -1,9 +1,7 @@
 /.vs/
-
 /Library/
-
 /Logs/
-
 /Temp/
 /obj
 /Build
+/Assembly-CSharp.csproj

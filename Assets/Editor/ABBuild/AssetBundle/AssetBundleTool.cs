@@ -16,7 +16,7 @@ namespace ABBuild
         /// <summary>
         /// 打包粒度
         /// </summary>
-        public static int[] pieceThreshold = new[] {0, 2, 5, 10, 50};
+        public static int[] pieceThreshold = new[] {0, 2, 5, 10, 50,100};
         /// <summary>
         /// 自定义bundle规则
         /// </summary>
@@ -70,6 +70,7 @@ namespace ABBuild
             {
                 case ".cs":
                 case ".meta":
+                case ".dll":
                     return false;
                 default:
                     return true;

@@ -1,11 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using ABBuild.Base;
 using UnityEngine;
 
 namespace ABBuild
 {
-    public class Assets_GUI:IAssetInfos
+    public class Assets_GUI
     {
         public Asset_GUI rootAsset;
         public Assets_GUI()

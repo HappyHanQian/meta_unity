@@ -93,6 +93,7 @@ public class GUIStyleViewer : EditorWindow
 
         scrollVector2 = GUILayout.BeginScrollView(scrollVector2);
         for (int i = 0; i < _objects.Length; i++)
+
         {
             Texture texture = _objects[i];
             if (!string.IsNullOrEmpty(texture.name) && texture.name.ToLower().Contains(search))
