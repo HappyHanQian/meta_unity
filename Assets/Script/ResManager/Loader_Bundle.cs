@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Assets.Script.ResManager
 {
-    public class Res_Bundle : ResLoader
+    public class Loader_Bundle : ResLoader
     {
         private string rootPath;
 
@@ -37,10 +37,28 @@ namespace Assets.Script.ResManager
             unloadList = new List<string>();
             ReadBundleList();
             ReadBundleInfo();
-            LoadManifest();
-            GameMain.Inst.StartCoroutine(CheckBundle());
+            bool isCorrect = IsBundleList_Correct();
+            if (isCorrect)
+            {
+                LoadManifest();
+                GameMain.Inst.StartCoroutine(CheckBundle());
+            }
+            else
+            {
+                Debug.LogError("bundle version is error");
+                //应该强制退出游戏
+            }
+
         }
 
+        private bool IsBundleList_Correct()
+        {
+            if (bundleInfo==null||bundleList==null)
+            {
+                return false;
+            }
+            return bundleList.version == bundleInfo.version;
+        }
         private void LoadManifest()
         {
             string bundleName = bundleList.bundles[0].name;
@@ -170,7 +188,7 @@ namespace Assets.Script.ResManager
             if (index < 0)
             {
                 //没有
-                return Time.realtimeSinceStartup + 2;
+                return Time.realtimeSinceStartup + 60;
             }
             else
             {
@@ -245,7 +263,7 @@ namespace Assets.Script.ResManager
         }
     }
 
-    public struct BundleList
+    public class BundleList
     {
         public string version;
         public Dictionary<int, BundleData> bundles;
@@ -258,7 +276,7 @@ namespace Assets.Script.ResManager
         public string md5;
     }
 
-    public struct BundleInfo
+    public class BundleInfo
     {
         public string version;
         public Dictionary<string, int> bundleInfos;

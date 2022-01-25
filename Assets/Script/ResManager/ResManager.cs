@@ -34,18 +34,18 @@ namespace Assets.Script.ResManager
             switch (GameMain.Inst.assetType)
             {
                 case AssetLoadType.Editor:
-                    loader = new Res_Editor();
+                    loader = new Loder_Editor();
                     path = Application.dataPath;
                     break;
                 case AssetLoadType.Bundle:
-                    loader = new Res_Bundle();
+                    loader = new Loader_Bundle();
                     path = GameMain.Inst.assetRootPath;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
 #else
-            loader = new Res_Bundle();
+            loader = new Loader_Bundle();
             path = Application.persistentDataPath;
 #endif
             loader.Init(path);

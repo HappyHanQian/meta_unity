@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Assets.Script.ResManager
 {
-    public class Res_Editor:ResLoader
+    public class Loder_Editor:ResLoader
     {
         private Dictionary<string, string> allAssets = new Dictionary<string, string>();
         
