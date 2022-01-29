@@ -1,8 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using Assets.Script.Tool;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Assets.Script.ResManager
 {
@@ -64,7 +67,7 @@ namespace Assets.Script.ResManager
                     return true;
             }
         }
-        public T Load<T>(string assetName) where T : Object
+        public T LoadAsset<T>(string assetName) where T : Object
         {
             if (allAssets.ContainsKey(assetName))
             {
@@ -74,6 +77,13 @@ namespace Assets.Script.ResManager
             {
                 return null;
             }
+        }
+
+        public IEnumerator LoadAssetAsync<T>(string assetname, Action<T> callBack) where T : Object
+        {
+            yield return new WaitForSecondsRealtime(0.1f);
+            var result = LoadAsset<T>(assetname);
+            callBack?.Invoke(result);
         }
     }
 }

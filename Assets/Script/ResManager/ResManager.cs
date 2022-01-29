@@ -4,27 +4,14 @@ using Object = UnityEngine.Object;
 
 namespace Assets.Script.ResManager
 {
-    public class ResManager
+    public class ResManager:MonoBehaviour
     {
-        private static ResManager _inst;
+        public static ResManager Inst;
 
-        public static ResManager Inst
+        void Start()
         {
-            get
-            {
-                if (_inst == null)
-                {
-                    _inst = new ResManager();
-                }
-
-                return _inst;
-            }
+            Inst = this;
         }
-
-        private ResManager()
-        {
-        }
-
         private ResLoader loader;
 
         public void Init()
@@ -58,7 +45,25 @@ namespace Assets.Script.ResManager
                 Init();
             }
 
-            return loader.Load<T>(assetName);
+            return loader.LoadAsset<T>(assetName);
+        }
+
+        public void LoadAsync<T>(string assetName, Action<T> callBack) where T : Object
+        {
+            if (loader == null)
+            {
+                Init();
+            }
+            StartCoroutine(loader.LoadAssetAsync<T>(assetName,callBack));
+        }
+
+        public void StopAllLoad()
+        {
+            if (loader is ResLoader_Stop)
+            {
+                ((ResLoader_Stop)loader).StopAllLoad();
+            }
+            StopAllCoroutines();
         }
     }
 }

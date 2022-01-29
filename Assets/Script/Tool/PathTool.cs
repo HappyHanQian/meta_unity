@@ -7,7 +7,7 @@ namespace Assets.Script.Tool
     {
         public static string AssetPath2FullPath(string assetPath)
         {
-            var path = Path.Combine(Application.dataPath, assetPath.Replace("Assets/", ""));
+            var path = Path.Combine(Application.dataPath, assetPath.Replace("Assets", "."));
             return path.Replace("/", "\\");
         }
 

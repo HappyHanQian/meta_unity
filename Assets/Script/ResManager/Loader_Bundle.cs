@@ -1,14 +1,16 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using Assets.Script.Tool;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Assets.Script.ResManager
 {
-    public class Loader_Bundle : ResLoader
+    public class Loader_Bundle : ResLoader, ResLoader_Stop
     {
         private string rootPath;
 
@@ -27,14 +29,24 @@ namespace Assets.Script.ResManager
         /// </summary>
         private AssetBundleManifest manifest;
 
-        private Dictionary<string, ABData> abs;
+        private Dictionary<string, ABData> abMap;
+
+        /// <summary>
+        /// 要卸载的bundle列表
+        /// </summary>
         private List<string> unloadList;
+
+        /// <summary>
+        /// 正在进行异步加载的bundle列表
+        /// </summary>
+        private List<string> loadingList;
 
         public void Init(string path)
         {
             rootPath = path;
-            abs = new Dictionary<string, ABData>();
+            abMap = new Dictionary<string, ABData>();
             unloadList = new List<string>();
+            loadingList = new List<string>();
             ReadBundleList();
             ReadBundleInfo();
             bool isCorrect = IsBundleList_Correct();
@@ -48,17 +60,18 @@ namespace Assets.Script.ResManager
                 Debug.LogError("bundle version is error");
                 //应该强制退出游戏
             }
-
         }
 
         private bool IsBundleList_Correct()
         {
-            if (bundleInfo==null||bundleList==null)
+            if (bundleInfo == null || bundleList == null)
             {
                 return false;
             }
+
             return bundleList.version == bundleInfo.version;
         }
+
         private void LoadManifest()
         {
             string bundleName = bundleList.bundles[0].name;
@@ -128,7 +141,7 @@ namespace Assets.Script.ResManager
             }
         }
 
-        public T Load<T>(string assetName) where T : Object
+        public T LoadAsset<T>(string assetName) where T : Object
         {
             string bundleName = GetBundleName(assetName);
             if (string.IsNullOrEmpty(bundleName))
@@ -138,38 +151,53 @@ namespace Assets.Script.ResManager
             }
             else
             {
-                if (abs.ContainsKey(bundleName))
+                if (abMap.ContainsKey(bundleName))
                 {
                     float unLoadTime = GetUnLoadTime(bundleName);
-                    ABData ab = abs[bundleName];
+                    ABData ab = abMap[bundleName];
                     ab.unLoadTime = unLoadTime;
                     return ab.LoadAsset<T>(assetName);
                 }
                 else
                 {
-                    var bundles = manifest.GetAllDependencies(bundleName);
-                    for (int i = 0; i < bundles.Length; i++)
-                    {
-                        var bn = bundles[i];
-                        if (abs.ContainsKey(bn))
-                        {
-                            abs[bn].Use();
-                            continue;
-                        }
-                        LoadAssetBundle(bn,false);
-                    }
-                    var ab = LoadAssetBundle(bundleName,true);
+                    var ab = LoadAssetBundleWithDencies(bundleName);
                     return ab.LoadAsset<T>(assetName);
                 }
             }
         }
 
-        private ABData LoadAssetBundle(string bundleName,bool useNum)
+
+        private ABData LoadAssetBundleWithDencies(string bundleName)
+        {
+            var bundles = manifest.GetAllDependencies(bundleName);
+            for (int i = 0; i < bundles.Length; i++)
+            {
+                var bn = bundles[i];
+                if (abMap.ContainsKey(bn))
+                {
+                    abMap[bn].Use();
+                    continue;
+                }
+
+                LoadAssetBundle(bn, false);
+            }
+
+            var ab = LoadAssetBundle(bundleName, true);
+            return ab;
+        }
+
+        /// <summary>
+        /// 加载bundle
+        /// </summary>
+        /// <param name="bundleName">bundleName</param>
+        /// <param name="useNum">是否需要计数(被依赖的包需要计数)</param>
+        /// <returns></returns>
+        private ABData LoadAssetBundle(string bundleName, bool useNum)
         {
             float unLoadTime = GetUnLoadTime(bundleName);
             var assetbundle = AssetBundle.LoadFromFile(Path.Combine(rootPath, bundleName));
             ABData ab = new ABData(assetbundle, unLoadTime);
-            abs.Add(bundleName, ab);
+            abMap.Add(bundleName, ab);
             if (unLoadTime > 0 && !unloadList.Contains(bundleName))
             {
                 unloadList.Add(bundleName);
@@ -179,8 +207,116 @@ namespace Assets.Script.ResManager
             {
                 ab.Use();
             }
+
             return ab;
         }
+
+        #region 异步加载
+
+
+        public IEnumerator LoadAssetAsync<T>(string assetName, Action<T> callBack) where T : Object
+        {
+            string bundleName = GetBundleName(assetName);
+            if (string.IsNullOrEmpty(bundleName))
+            {
+                Debug.LogError($"bundle中没有该资源:{assetName}");
+            }
+            else
+            {
+                if (!abMap.ContainsKey(bundleName))
+                {
+                    //没有下载过
+                    if (loadingList.Contains(bundleName))
+                    {
+                        //在下载列表里
+                        yield return new WaitUntil(delegate() { return !loadingList.Contains(bundleName); });
+                    }
+                    else
+                    {
+                        //没有在下载列表里
+                        yield return LoadAssetBundleWithDenciesAsync(bundleName);
+                    }
+                }
+                else
+                {
+                    //已经存在在map中了,直接从map中拿
+                }
+
+                if (abMap.ContainsKey(bundleName))
+                {
+                    float unLoadTime = GetUnLoadTime(bundleName);
+                    ABData ab = abMap[bundleName];
+                    ab.unLoadTime = unLoadTime;
+                    yield return ab.LoadAssetAsync(assetName, callBack);
+                }
+                else
+                {
+                    callBack?.Invoke(null);
+                }
+            }
+        }
+
+        private IEnumerator LoadAssetBundleWithDenciesAsync(string bundleName)
+        {
+            var bundles = manifest.GetAllDependencies(bundleName);
+            for (int i = 0; i < bundles.Length; i++)
+            {
+                var bn = bundles[i];
+                if (abMap.ContainsKey(bn))
+                {
+                    abMap[bn].Use();
+                    continue;
+                }
+
+                yield return LoadAssetBundleAsync(bn, false);
+            }
+
+            yield return LoadAssetBundleAsync(bundleName, true);
+        }
+
+        private IEnumerator LoadAssetBundleAsync(string bundleName, bool useNum)
+        {
+            if (loadingList.Contains(bundleName))
+            {
+                yield return new WaitUntil(delegate() { return !loadingList.Contains(bundleName); });
+            }
+
+            float unLoadTime = GetUnLoadTime(bundleName);
+
+            if (abMap.ContainsKey(bundleName))
+            {
+                ABData ab = abMap[bundleName];
+                ab.unLoadTime = unLoadTime;
+            }
+            else
+            {
+                loadingList.Add(bundleName);
+                var bundleLoad = AssetBundle.LoadFromFileAsync(Path.Combine(rootPath, bundleName));
+                yield return bundleLoad;
+                if (bundleLoad.assetBundle != null)
+                {
+                    ABData ab = new ABData(bundleLoad.assetBundle, unLoadTime);
+                    if (unLoadTime > 0 && !unloadList.Contains(bundleName))
+                    {
+                        unloadList.Add(bundleName);
+                    }
+
+                    if (useNum)
+                    {
+                        ab.Use();
+                    }
+
+                    abMap.Add(bundleName, ab);
+                }
+
+                loadingList.Remove(bundleName);
+            }
+        }
+        public void StopAllLoad()
+        {
+            loadingList.Clear();
+        }
+        #endregion
 
         public float GetUnLoadTime(string bundlename)
         {
@@ -212,16 +348,17 @@ namespace Assets.Script.ResManager
                 for (int i = unloadList.Count - 1; i >= 0; i--)
                 {
                     string bundlename = unloadList[i];
-                    if (abs[bundlename].CanUnLoad())
+                    if (abMap[bundlename].CanUnLoad())
                     {
                         //60秒后删除
-                        abs[bundlename].unLoadTime = curTime + 60;
+                        abMap[bundlename].unLoadTime = curTime + 60;
                     }
-                    if (curTime >= abs[bundlename].unLoadTime)
+
+                    if (curTime >= abMap[bundlename].unLoadTime)
                     {
                         PreUnloadBundle(bundlename);
-                        abs[bundlename].UnLoad(false);
-                        abs.Remove(bundlename);
+                        abMap[bundlename].UnLoad(false);
+                        abMap.Remove(bundlename);
                         unloadList.Remove(bundlename);
                     }
                 }
@@ -236,16 +373,17 @@ namespace Assets.Script.ResManager
             for (int i = 0; i < bundles.Length; i++)
             {
                 var temp = bundles[i];
-                if (abs.ContainsKey(temp))
+                if (abMap.ContainsKey(temp))
                 {
-                    abs[temp].UnUse();
+                    abMap[temp].UnUse();
                 }
                 else
                 {
-                    Debug.Log($"abs 中没有该ab包:{bundleName}");
+                    Debug.Log($"abMap 中没有该ab包:{bundleName}");
                 }
             }
         }
+
         private string GetBundleName(string assetName)
         {
             int id = -1;

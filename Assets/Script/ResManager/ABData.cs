@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -16,13 +17,19 @@ namespace Assets.Script.ResManager
         /// </summary>
         public float unLoadTime;
         public AssetBundle ab;
+        /// <summary>
+        /// 已经加载的资源列表
+        /// </summary>
         public Dictionary<string, System.WeakReference> allAssets;
+
+        public List<string> loadingList;
         public ABData(AssetBundle assetBundle, float unLoadTime)
         {
             this.ab = assetBundle;
             this.unLoadTime = unLoadTime;
             used = 1;
             allAssets = new Dictionary<string,System.WeakReference>();
+            loadingList = new List<string>();
         }
         public T LoadAsset<T>(string assetName)where T:Object
         {
@@ -40,10 +47,42 @@ namespace Assets.Script.ResManager
                 return asset;
             }
         }
-
+        public IEnumerator LoadAssetAsync<T> (string assetName,Action<T> callBack) where T : Object
+        {
+            if (allAssets.ContainsKey(assetName) && allAssets[assetName].Target != null)
+            {
+                callBack?.Invoke((T)allAssets[assetName].Target);
+            }
+            else
+            {
+                if (loadingList.Contains(assetName))
+                {
+                    yield return new WaitUntil(delegate()
+                    {
+                        return !loadingList.Contains(assetName);
+                    });
+                    if (allAssets.ContainsKey(assetName) && allAssets[assetName].Target != null)
+                    {
+                        callBack?.Invoke((T)allAssets[assetName].Target);
+                    }
+                }
+                else
+                {
+                    loadingList.Add(assetName);
+                    var loader= ab.LoadAssetAsync(assetName);
+                    yield return loader;
+                    if (loader.asset!=null)
+                    {
+                        allAssets[assetName] = new WeakReference(loader.asset);
+                        callBack?.Invoke(loader.asset as T);
+                    }
+                    loadingList.Remove(assetName);
+                }
+            }
+        }
         public bool CanUnLoad()
         {
-            if (allAssets.Count==0)
+            if (allAssets.Count==0||loadingList.Count>0)
             {
                 return false;
             }

@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using Assets.Script.ResManager;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -27,8 +28,10 @@ public class Test : MonoBehaviour
 
     private void OnClick()
     {
-        var g = ResManager.Inst.Load<GameObject>("Cube.prefab");
-        o = GameObject.Instantiate(g);
+        ResManager.Inst.LoadAsync<GameObject>("Cube.prefab", delegate(GameObject g)
+        {
+            o = GameObject.Instantiate(g);
+        });
     }
 
 }
