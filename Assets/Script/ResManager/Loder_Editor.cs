@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if UNITY_EDITOR
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -81,9 +82,10 @@ namespace Assets.Script.ResManager
 
         public IEnumerator LoadAssetAsync<T>(string assetname, Action<T> callBack) where T : Object
         {
-            yield return new WaitForSecondsRealtime(0.1f);
+            yield return new WaitForSecondsRealtime(1f);
             var result = LoadAsset<T>(assetname);
             callBack?.Invoke(result);
         }
     }
 }
+#endif

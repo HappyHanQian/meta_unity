@@ -14,5 +14,6 @@ namespace Assets.Script.ResManager
     public interface ResLoader_Stop
     {
         void StopAllLoad();
+        void StopLoad(string assetName);
     }
 }

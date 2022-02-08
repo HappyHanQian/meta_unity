@@ -179,10 +179,10 @@ namespace Assets.Script.ResManager
                     continue;
                 }
 
-                LoadAssetBundle(bn, false);
+                LoadAssetBundle(bn, true);
             }
 
-            var ab = LoadAssetBundle(bundleName, true);
+            var ab = LoadAssetBundle(bundleName, false);
             return ab;
         }
 
@@ -216,6 +216,7 @@ namespace Assets.Script.ResManager
 
         public IEnumerator LoadAssetAsync<T>(string assetName, Action<T> callBack) where T : Object
         {
+            yield return new WaitForSecondsRealtime(1);
             string bundleName = GetBundleName(assetName);
             if (string.IsNullOrEmpty(bundleName))
             {
@@ -248,6 +249,11 @@ namespace Assets.Script.ResManager
                     ABData ab = abMap[bundleName];
                     ab.unLoadTime = unLoadTime;
                     yield return ab.LoadAssetAsync(assetName, callBack);
+                    if (unLoadTime > 0 && !unloadList.Contains(bundleName))
+                    {
+                        unloadList.Add(bundleName);
+                    }
+
                 }
                 else
                 {
@@ -268,10 +274,10 @@ namespace Assets.Script.ResManager
                     continue;
                 }
 
-                yield return LoadAssetBundleAsync(bn, false);
+                yield return LoadAssetBundleAsync(bn, true);
             }
 
-            yield return LoadAssetBundleAsync(bundleName, true);
+            yield return LoadAssetBundleAsync(bundleName, false);
         }
 
         private IEnumerator LoadAssetBundleAsync(string bundleName, bool useNum)
@@ -296,13 +302,12 @@ namespace Assets.Script.ResManager
                 if (bundleLoad.assetBundle != null)
                 {
                     ABData ab = new ABData(bundleLoad.assetBundle, unLoadTime);
-                    if (unLoadTime > 0 && !unloadList.Contains(bundleName))
-                    {
-                        unloadList.Add(bundleName);
-                    }
-
                     if (useNum)
                     {
+                        if (unLoadTime > 0 && !unloadList.Contains(bundleName))
+                        {
+                            unloadList.Add(bundleName);
+                        }
                         ab.Use();
                     }
 
@@ -316,6 +321,16 @@ namespace Assets.Script.ResManager
         {
             loadingList.Clear();
         }
+
+        public void StopLoad(string assetName)
+        {
+            string bundleName = GetBundleName(assetName);
+            if (loadingList.Contains(bundleName))
+            {
+                loadingList.Remove(bundleName);
+            }
+        }
+
         #endregion
 
         public float GetUnLoadTime(string bundlename)
@@ -353,8 +368,8 @@ namespace Assets.Script.ResManager
                         //60秒后删除
                         abMap[bundlename].unLoadTime = curTime + 60;
                     }
-
-                    if (curTime >= abMap[bundlename].unLoadTime)
+                
+                    if (abMap[bundlename].unLoadTime>=0&&curTime >= abMap[bundlename].unLoadTime)
                     {
                         PreUnloadBundle(bundlename);
                         abMap[bundlename].UnLoad(false);

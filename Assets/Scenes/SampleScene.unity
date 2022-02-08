@@ -647,8 +647,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 69d498d8b880e244fa047db7ef5f69f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  assetType: 0
-  assetRootPath: 
+  assetType: 1
+  assetRootPath: D:\ttt\git\MetaUnity\Build\AssetsBunde\StandaloneWindows
 --- !u!1 &1055553607
 GameObject:
   m_ObjectHideFlags: 0

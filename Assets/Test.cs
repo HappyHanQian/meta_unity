@@ -12,6 +12,8 @@ public class Test : MonoBehaviour
     public Button unLoad;
 
     public GameObject o;
+
+    private bool load = true;
     // Start is called before the first frame update
     void Start()
     {
@@ -28,10 +30,18 @@ public class Test : MonoBehaviour
 
     private void OnClick()
     {
-        ResManager.Inst.LoadAsync<GameObject>("Cube.prefab", delegate(GameObject g)
+        if (load)
         {
-            o = GameObject.Instantiate(g);
-        });
+            ResManager.Inst.LoadAsync<GameObject>("Cube.prefab", delegate (GameObject g)
+            {
+                o = GameObject.Instantiate(g);
+            });
+        }
+        else
+        {
+            ResManager.Inst.StopLoad("Cube.prefab");
+        }
+        load = !load;
     }
 
 }
