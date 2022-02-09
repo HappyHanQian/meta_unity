@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Assets.Script.ObjectPool;
 using Assets.Script.Tool;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -29,7 +30,7 @@ namespace Assets.Script.ResManager
         /// </summary>
         private AssetBundleManifest manifest;
 
-        private Dictionary<string, ABData> abMap;
+        public Dictionary<string, ABData> abMap;
 
         /// <summary>
         /// 要卸载的bundle列表
@@ -153,14 +154,14 @@ namespace Assets.Script.ResManager
             {
                 if (abMap.ContainsKey(bundleName))
                 {
-                    float unLoadTime = GetUnLoadTime(bundleName);
                     ABData ab = abMap[bundleName];
-                    ab.unLoadTime = unLoadTime;
+                    AddToUnloadList(bundleName);
                     return ab.LoadAsset<T>(assetName);
                 }
                 else
                 {
                     var ab = LoadAssetBundleWithDencies(bundleName);
+                    AddToUnloadList(bundleName);
                     return ab.LoadAsset<T>(assetName);
                 }
             }
@@ -194,14 +195,10 @@ namespace Assets.Script.ResManager
         /// <returns></returns>
         private ABData LoadAssetBundle(string bundleName, bool useNum)
         {
-            float unLoadTime = GetUnLoadTime(bundleName);
             var assetbundle = AssetBundle.LoadFromFile(Path.Combine(rootPath, bundleName));
-            ABData ab = new ABData(assetbundle, unLoadTime);
+            ABData ab = ObjectPoolManager.Inst.GetObject<ABData>();
+            ab.SetAssetBundle(assetbundle);
             abMap.Add(bundleName, ab);
-            if (unLoadTime > 0 && !unloadList.Contains(bundleName))
-            {
-                unloadList.Add(bundleName);
-            }
 
             if (useNum)
             {
@@ -212,7 +209,6 @@ namespace Assets.Script.ResManager
         }
 
         #region 异步加载
-
 
         public IEnumerator LoadAssetAsync<T>(string assetName, Action<T> callBack) where T : Object
         {
@@ -245,20 +241,43 @@ namespace Assets.Script.ResManager
 
                 if (abMap.ContainsKey(bundleName))
                 {
-                    float unLoadTime = GetUnLoadTime(bundleName);
                     ABData ab = abMap[bundleName];
-                    ab.unLoadTime = unLoadTime;
                     yield return ab.LoadAssetAsync(assetName, callBack);
-                    if (unLoadTime > 0 && !unloadList.Contains(bundleName))
-                    {
-                        unloadList.Add(bundleName);
-                    }
-
+                    //加入卸载列表
+                    AddToUnloadList(bundleName);
                 }
                 else
                 {
                     callBack?.Invoke(null);
                 }
+            }
+        }
+
+        private void AddToUnloadList(string bundleName)
+        {
+            var bundles = manifest.GetAllDependencies(bundleName);
+            for (int i = 0; i < bundles.Length; i++)
+            {
+                var n = bundles[i];
+                var t = GetUnLoadTime(n);
+                if (t > 0 && !unloadList.Contains(bundleName))
+                {
+                    if (!unloadList.Contains(n))
+                    {
+                        unloadList.Add(n);
+                    }
+                    abMap[n].SetUnLoadTime(t);
+                }
+            }
+
+            float unLoadTime = GetUnLoadTime(bundleName);
+            if (unLoadTime > 0 && !unloadList.Contains(bundleName))
+            {
+                if (!unloadList.Contains(bundleName))
+                {
+                    unloadList.Add(bundleName);
+                }
+                abMap[bundleName].SetUnLoadTime(unLoadTime);
             }
         }
 
@@ -287,12 +306,10 @@ namespace Assets.Script.ResManager
                 yield return new WaitUntil(delegate() { return !loadingList.Contains(bundleName); });
             }
 
-            float unLoadTime = GetUnLoadTime(bundleName);
 
             if (abMap.ContainsKey(bundleName))
             {
-                ABData ab = abMap[bundleName];
-                ab.unLoadTime = unLoadTime;
+                
             }
             else
             {
@@ -301,13 +318,10 @@ namespace Assets.Script.ResManager
                 yield return bundleLoad;
                 if (bundleLoad.assetBundle != null)
                 {
-                    ABData ab = new ABData(bundleLoad.assetBundle, unLoadTime);
+                    ABData ab = ObjectPoolManager.Inst.GetObject<ABData>();
+                    ab.SetAssetBundle(bundleLoad.assetBundle);
                     if (useNum)
                     {
-                        if (unLoadTime > 0 && !unloadList.Contains(bundleName))
-                        {
-                            unloadList.Add(bundleName);
-                        }
                         ab.Use();
                     }
 
@@ -317,6 +331,7 @@ namespace Assets.Script.ResManager
                 loadingList.Remove(bundleName);
             }
         }
+
         public void StopAllLoad()
         {
             loadingList.Clear();
@@ -338,7 +353,7 @@ namespace Assets.Script.ResManager
             int index = bundlename.IndexOf('#');
             if (index < 0)
             {
-                //没有
+                //没有被依赖计数
                 return Time.realtimeSinceStartup + 60;
             }
             else
@@ -346,11 +361,13 @@ namespace Assets.Script.ResManager
                 int times = int.Parse(bundlename.Substring(0, index));
                 if (times >= 100)
                 {
+                    //被依赖的bundle包个数大于等于100
+                    //不会根据时间策略卸载
                     return -1;
                 }
                 else
                 {
-                    return Time.realtimeSinceStartup + times * 10;
+                    return Time.realtimeSinceStartup + (times+1) * 10;
                 }
             }
         }
@@ -366,13 +383,14 @@ namespace Assets.Script.ResManager
                     if (abMap[bundlename].CanUnLoad())
                     {
                         //60秒后删除
-                        abMap[bundlename].unLoadTime = curTime + 60;
+                        abMap[bundlename].SetUnLoadTime(curTime + 60);
                     }
-                
-                    if (abMap[bundlename].unLoadTime>=0&&curTime >= abMap[bundlename].unLoadTime)
+
+                    if (abMap[bundlename].GetUnLoadTime() >= 0 && curTime >= abMap[bundlename].GetUnLoadTime())
                     {
                         PreUnloadBundle(bundlename);
                         abMap[bundlename].UnLoad(false);
+                        ObjectPoolManager.Inst.Recycle(abMap[bundlename]);
                         abMap.Remove(bundlename);
                         unloadList.Remove(bundlename);
                     }

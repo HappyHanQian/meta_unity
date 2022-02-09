@@ -5,15 +5,17 @@ using Object = UnityEngine.Object;
 
 namespace Assets.Script.ResManager
 {
-    public class ResManager:MonoBehaviour
+    public class ResManager : MonoBehaviour
     {
         public static ResManager Inst;
         public Dictionary<string, List<Coroutine>> loadList;
+
         void Start()
         {
             Inst = this;
             loadList = new Dictionary<string, List<Coroutine>>();
         }
+
         private ResLoader loader;
 
         public void Init()
@@ -57,32 +59,34 @@ namespace Assets.Script.ResManager
                 Init();
             }
 
-           var cor= StartCoroutine(loader.LoadAssetAsync<T>(assetName, delegate(T t)
-           {
-               if (loadList.ContainsKey(assetName))
-               {
-                   loadList.Remove(assetName);
-               }
-               callBack.Invoke(t);
-           }));
-           if (loadList.ContainsKey(assetName))
-           {
-               loadList[assetName].Add(cor);
-           }
-           else
-           {
-               List<Coroutine> l = new List<Coroutine>();
-               l.Add(cor);
-               loadList[assetName] = l;
-           }
+            var cor = StartCoroutine(loader.LoadAssetAsync<T>(assetName, delegate(T t)
+            {
+                if (loadList.ContainsKey(assetName))
+                {
+                    loadList.Remove(assetName);
+                }
+
+                callBack.Invoke(t);
+            }));
+            if (loadList.ContainsKey(assetName))
+            {
+                loadList[assetName].Add(cor);
+            }
+            else
+            {
+                List<Coroutine> l = new List<Coroutine>();
+                l.Add(cor);
+                loadList[assetName] = l;
+            }
         }
 
         public void StopAllLoad()
         {
             if (loader is ResLoader_Stop)
             {
-                ((ResLoader_Stop)loader).StopAllLoad();
+                ((ResLoader_Stop) loader).StopAllLoad();
             }
+
             StopAllCoroutines();
         }
 
@@ -90,16 +94,27 @@ namespace Assets.Script.ResManager
         {
             if (loader is ResLoader_Stop)
             {
-                ((ResLoader_Stop)loader).StopLoad(assetName);
+                ((ResLoader_Stop) loader).StopLoad(assetName);
                 if (loadList.ContainsKey(assetName))
                 {
                     var list = loadList[assetName];
                     for (int i = 0; i < list.Count; i++)
                     {
-                       StopCoroutine(list[i]);
+                        StopCoroutine(list[i]);
                     }
                 }
+
                 loadList.Remove(assetName);
+            }
+        }
+
+        void OnGUI()
+        {
+            if (loader is Loader_Bundle)
+            {
+                GUIStyle style = new GUIStyle();
+                style.fontSize = 20;
+                GUILayout.Label($"Bundle Num:{((Loader_Bundle) loader).abMap.Count}", style);
             }
         }
     }

@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using Assets.Script.ObjectPool;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace Assets.Script.ResManager
 {
-    public class ABData
+    public class ABData:ObjeckBase
     {
         /// <summary>
         /// 被依赖引用计数(显性加载的bundle不进行计数)
@@ -15,7 +16,7 @@ namespace Assets.Script.ResManager
         /// <summary>
         /// 删除时间(-1为常驻不删除)
         /// </summary>
-        public float unLoadTime;
+        private float unLoadTime;
         public AssetBundle ab;
         /// <summary>
         /// 已经加载的资源列表
@@ -23,13 +24,25 @@ namespace Assets.Script.ResManager
         public Dictionary<string, System.WeakReference> allAssets;
 
         public List<string> loadingList;
-        public ABData(AssetBundle assetBundle, float unLoadTime)
+        public ABData()
         {
-            this.ab = assetBundle;
-            this.unLoadTime = unLoadTime;
             used = 1;
             allAssets = new Dictionary<string,System.WeakReference>();
             loadingList = new List<string>();
+        }
+
+        public void SetAssetBundle(AssetBundle assetBundle)
+        {
+            this.ab = assetBundle;
+        }
+
+        public void SetUnLoadTime(float unLoadTime)
+        {
+            this.unLoadTime = unLoadTime;
+        }
+        public float GetUnLoadTime()
+        {
+            return this.unLoadTime;
         }
         public T LoadAsset<T>(string assetName)where T:Object
         {
@@ -132,6 +145,15 @@ namespace Assets.Script.ResManager
             {
                 allAssets.Clear();
             }
+        }
+
+        public override void ReSet()
+        {
+            used = 0;
+            unLoadTime = 0;
+            ab = null;
+            allAssets.Clear();
+            loadingList.Clear();
         }
     }
 }

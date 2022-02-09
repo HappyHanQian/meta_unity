@@ -30,18 +30,22 @@ public class Test : MonoBehaviour
 
     private void OnClick()
     {
-        if (load)
+        ResManager.Inst.LoadAsync<GameObject>("Cube.prefab", delegate (GameObject g)
         {
-            ResManager.Inst.LoadAsync<GameObject>("Cube.prefab", delegate (GameObject g)
-            {
-                o = GameObject.Instantiate(g);
-            });
-        }
-        else
-        {
-            ResManager.Inst.StopLoad("Cube.prefab");
-        }
-        load = !load;
+            o = GameObject.Instantiate(g);
+        });
+        // if (load)
+        // {
+        //     ResManager.Inst.LoadAsync<GameObject>("Cube.prefab", delegate (GameObject g)
+        //     {
+        //         o = GameObject.Instantiate(g);
+        //     });
+        // }
+        // else
+        // {
+        //     ResManager.Inst.StopLoad("Cube.prefab");
+        // }
+        // load = !load;
     }
 
 }
