@@ -149,7 +149,7 @@ namespace ABBuild
                 {
                     //是图集
                     string abname = "0#" + this.assetPath.Replace("/", "_").Replace(this.extension, "");
-                    return abname;
+                    return abname.ToLower();
                 }
                 switch (this.parents.Count)
                 {
@@ -168,14 +168,14 @@ namespace ABBuild
                             int cur = AssetBundleTool.pieceThreshold[i];
                             if (count<cur)
                             {
-                                return min + "#" + dir_name.Replace("/", "_").Replace("\\", "_");
+                                return (min + "#" + dir_name.Replace("/", "_").Replace("\\", "_")).ToLower();
                             }
                             else
                             {
                                 min = cur;
                             }
                         }
-                        return min + "#" + dir_name.Replace("/", "_").Replace("\\", "_");
+                        return (min + "#" + dir_name.Replace("/", "_").Replace("\\", "_")).ToLower();
                 }
             }
         }

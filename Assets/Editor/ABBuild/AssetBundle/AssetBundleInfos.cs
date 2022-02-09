@@ -176,18 +176,21 @@ namespace ABBuild
                 CreateDeps(info, self);
             }
         }
-        public AssetBundleBuild[] GetAssetBundleBuildInfo()
+        public AssetBundleBuild[] GetAssetBundleBuildInfo(out List<string> abNames)
         {
             if (bundlesDic.Count<=0)
             {
                 Creat();
             }
+
+            abNames = new List<string>();
             AssetBundleBuild[] bundles = new AssetBundleBuild[bundlesDic.Count];
             int index = 0;
             foreach (var bundleNames in bundlesDic)
             {
                 foreach (var bundleInfo in bundleNames.Value)
                 {
+                    abNames.Add(bundleNames.Key);
                     AssetBundleBuild b = new AssetBundleBuild();
                     b.assetBundleName = bundleNames.Key;
                     b.assetBundleVariant = bundleInfo.Key;

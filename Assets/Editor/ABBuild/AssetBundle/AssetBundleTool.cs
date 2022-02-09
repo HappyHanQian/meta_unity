@@ -88,13 +88,30 @@ namespace ABBuild
             BuildAssetBundleOptions options, BuildTarget buildTarget)
         {
             Debug.Log("开始打包");
-            var bundles = assetBundleInfos.GetAssetBundleBuildInfo();
             string path = Path.Combine(outPath, buildTarget.ToString());
             if (!Directory.Exists(path))
             {
+                // Directory.Delete(path,true);
                 Directory.CreateDirectory(path);
             }
 
+            List<string> bundleNames = null;
+            var bundles = assetBundleInfos.GetAssetBundleBuildInfo(out bundleNames);
+            DirectoryInfo di = new DirectoryInfo(path);
+            var files = di.GetFiles();
+            for (int i = 0; i < files.Length; i++)
+            {
+                var fn = files[i].Name;
+                if (files[i].Extension== ".manifest")
+                {
+                    continue;
+                }
+                if (!bundleNames.Contains(fn))
+                {
+                   files[i].Delete();
+                   File.Delete(files[i].FullName+ ".manifest");
+                }
+            }
             var manifest = BuildPipeline.BuildAssetBundles(path, bundles, options, buildTarget);
             CreaBuildFile(path, assetBundleInfos, manifest);
             return manifest;
