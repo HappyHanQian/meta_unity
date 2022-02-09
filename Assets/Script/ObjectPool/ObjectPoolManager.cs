@@ -12,7 +12,7 @@ namespace Assets.Script.ObjectPool
         {
             get
             {
-                if (_inst==null)
+                if (_inst == null)
                 {
                     _inst = new ObjectPoolManager();
                 }
@@ -26,12 +26,12 @@ namespace Assets.Script.ObjectPool
             pool = new Dictionary<Type, Queue<ObjeckBase>>();
         }
 
-        public T GetObject<T>()where T:ObjeckBase
+        public T GetObject<T>() where T : ObjeckBase
         {
             var t = typeof(T);
-            if (pool.ContainsKey(t)&&pool[t].Count>0)
+            if (pool.ContainsKey(t) && pool[t].Count > 0)
             {
-               return (T)pool[t].Dequeue();
+                return (T) pool[t].Dequeue();
             }
             else
             {
@@ -42,10 +42,10 @@ namespace Assets.Script.ObjectPool
 
         public void Recycle(ObjeckBase o)
         {
-            var t= o.GetType();
+            var t = o.GetType();
+            o.ReSet();
             if (pool.ContainsKey(t))
             {
-                o.ReSet();
                 pool[t].Enqueue(o);
             }
             else
@@ -54,7 +54,6 @@ namespace Assets.Script.ObjectPool
                 que.Enqueue(o);
                 pool[t] = que;
             }
-
         }
     }
 }
