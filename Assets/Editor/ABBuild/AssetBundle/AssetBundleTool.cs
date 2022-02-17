@@ -91,7 +91,6 @@ namespace ABBuild
             string path = Path.Combine(outPath, buildTarget.ToString());
             if (!Directory.Exists(path))
             {
-                // Directory.Delete(path,true);
                 Directory.CreateDirectory(path);
             }
 
