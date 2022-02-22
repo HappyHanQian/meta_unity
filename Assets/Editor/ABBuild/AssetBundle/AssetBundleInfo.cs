@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEditor;
 
-namespace ABBuild
-{
     public class AssetBundleInfo
     {
         public string name;
@@ -31,4 +29,3 @@ namespace ABBuild
             assets.Add(asset);
         }
     }
-}

@@ -2,8 +2,6 @@
 using System.IO;
 using UnityEngine;
 
-namespace ABBuild
-{
     public static class AssetTool
     {
         public static void ReadAssetsInChildren(Asset_GUI asset)
@@ -107,4 +105,3 @@ namespace ABBuild
             return "";
         }
     }
-}

@@ -1,22 +1,19 @@
 ﻿using UnityEngine;
 
-namespace Assets
+public class GameMain : MonoBehaviour
 {
-    public class GameMain:MonoBehaviour
-    {
-        public static GameMain Inst;
-        public AssetLoadType assetType;
-        public string assetRootPath;
+    public static GameMain Inst;
+    public AssetLoadType assetType;
+    public string assetRootPath;
 
-        void Awake()
-        {
-            Inst = this;
-        }
-    }
-
-    public enum AssetLoadType
+    void Awake()
     {
-        Editor,
-        Bundle,
+        Inst = this;
     }
+}
+
+public enum AssetLoadType
+{
+    Editor,
+    Bundle,
 }

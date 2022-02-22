@@ -1,59 +1,56 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Assets.Script.ObjectPool
+public class ObjectPoolManager
 {
-    public class ObjectPoolManager
+    public Dictionary<Type, Queue<ObjeckBase>> pool;
+    private static ObjectPoolManager _inst;
+
+    public static ObjectPoolManager Inst
     {
-        public Dictionary<Type, Queue<ObjeckBase>> pool;
-        private static ObjectPoolManager _inst;
-
-        public static ObjectPoolManager Inst
+        get
         {
-            get
+            if (_inst == null)
             {
-                if (_inst == null)
-                {
-                    _inst = new ObjectPoolManager();
-                }
-
-                return _inst;
+                _inst = new ObjectPoolManager();
             }
+
+            return _inst;
         }
+    }
 
-        private ObjectPoolManager()
+    private ObjectPoolManager()
+    {
+        pool = new Dictionary<Type, Queue<ObjeckBase>>();
+    }
+
+    public T GetObject<T>() where T : ObjeckBase
+    {
+        var t = typeof(T);
+        if (pool.ContainsKey(t) && pool[t].Count > 0)
         {
-            pool = new Dictionary<Type, Queue<ObjeckBase>>();
+            return (T) pool[t].Dequeue();
         }
-
-        public T GetObject<T>() where T : ObjeckBase
+        else
         {
-            var t = typeof(T);
-            if (pool.ContainsKey(t) && pool[t].Count > 0)
-            {
-                return (T) pool[t].Dequeue();
-            }
-            else
-            {
-                var retult = Activator.CreateInstance<T>();
-                return retult;
-            }
+            var retult = Activator.CreateInstance<T>();
+            return retult;
         }
+    }
 
-        public void Recycle(ObjeckBase o)
+    public void Recycle(ObjeckBase o)
+    {
+        var t = o.GetType();
+        o.ReSet();
+        if (pool.ContainsKey(t))
         {
-            var t = o.GetType();
-            o.ReSet();
-            if (pool.ContainsKey(t))
-            {
-                pool[t].Enqueue(o);
-            }
-            else
-            {
-                var que = new Queue<ObjeckBase>();
-                que.Enqueue(o);
-                pool[t] = que;
-            }
+            pool[t].Enqueue(o);
+        }
+        else
+        {
+            var que = new Queue<ObjeckBase>();
+            que.Enqueue(o);
+            pool[t] = que;
         }
     }
 }
