@@ -59,6 +59,21 @@ public class Loader_Bundle : ResLoader, ResLoader_Stop
         }
     }
 
+    private string GetRealFilePath(string fileName)
+    {
+        string result = Path.Combine(rootPath, fileName);
+        if (File.Exists(result))
+        {
+            return result;
+        }
+        result = Path.Combine(Application.streamingAssetsPath, fileName);
+        if (File.Exists(result))
+        {
+            return result;
+        }
+
+        return string.Empty;
+    }
     private bool IsBundleList_Correct()
     {
         if (bundleInfo == null || bundleList == null)
@@ -72,16 +87,16 @@ public class Loader_Bundle : ResLoader, ResLoader_Stop
     private void LoadManifest()
     {
         string bundleName = bundleList.bundles[0].name;
-        string path = Path.Combine(rootPath, bundleName);
-        var main = AssetBundle.LoadFromFile(path);
-        if (main != null)
+        string path = GetRealFilePath(bundleName);
+        if (string.IsNullOrEmpty(path))
         {
-            manifest = main.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
-            main.Unload(false);
+            Debug.LogError("manifest file is not exit");
         }
         else
         {
-            Debug.LogError("manifest file is not exit");
+            var main = AssetBundle.LoadFromFile(path);
+            manifest = main.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
+            main.Unload(false);
         }
     }
 
@@ -89,22 +104,29 @@ public class Loader_Bundle : ResLoader, ResLoader_Stop
     {
         bundleInfo = new BundleInfo();
         bundleInfo.bundleInfos = new Dictionary<string, int>();
-        string bundleInfoPath = Path.Combine(rootPath, "BundldInfo");
-        var e = File.ReadLines(bundleInfoPath).GetEnumerator();
-        while (e.MoveNext())
+        string bundleInfoPath = GetRealFilePath("BundldInfo");
+        if (string.IsNullOrEmpty(bundleInfoPath))
         {
-            string temp = e.Current;
-            string[] temps = temp.Split('|');
-            if (temps.Length == 1)
+            Debug.LogError("BundldInfo file is not exit");
+        }
+        else
+        {
+            var e = File.ReadLines(bundleInfoPath).GetEnumerator();
+            while (e.MoveNext())
             {
-                //版本信息
-                bundleInfo.version = temp;
-            }
-            else if (temps.Length >= 2)
-            {
-                string assetname = temps[0];
-                int id = int.Parse(temps[1]);
-                bundleInfo.bundleInfos.Add(assetname, id);
+                string temp = e.Current;
+                string[] temps = temp.Split('|');
+                if (temps.Length == 1)
+                {
+                    //版本信息
+                    bundleInfo.version = temp;
+                }
+                else if (temps.Length >= 2)
+                {
+                    string assetname = temps[0];
+                    int id = int.Parse(temps[1]);
+                    bundleInfo.bundleInfos.Add(assetname, id);
+                }
             }
         }
     }
@@ -113,27 +135,34 @@ public class Loader_Bundle : ResLoader, ResLoader_Stop
     {
         bundleList = new BundleList();
         bundleList.bundles = new Dictionary<int, BundleData>();
-        string bundleListPath = Path.Combine(rootPath, "BundleList");
-        var e = File.ReadLines(bundleListPath).GetEnumerator();
-        while (e.MoveNext())
+        string bundleListPath = GetRealFilePath("BundleList");
+        if (string.IsNullOrEmpty(bundleListPath))
         {
-            string temp = e.Current;
-            string[] temps = temp.Split('|');
-            if (temps.Length == 1)
+            Debug.LogError("BundleList file is not exit");
+        }
+        else
+        {
+            var e = File.ReadLines(bundleListPath).GetEnumerator();
+            while (e.MoveNext())
             {
-                //版本信息
-                bundleList.version = temp;
-            }
-            else if (temps.Length >= 3)
-            {
-                int id = int.Parse(temps[0]);
-                string bundlename = temps[1];
-                string md5 = temps[2];
-                BundleData bd = new BundleData();
-                bd.id = id;
-                bd.name = bundlename;
-                bd.md5 = md5;
-                bundleList.bundles.Add(id, bd);
+                string temp = e.Current;
+                string[] temps = temp.Split('|');
+                if (temps.Length == 1)
+                {
+                    //版本信息
+                    bundleList.version = temp;
+                }
+                else if (temps.Length >= 3)
+                {
+                    int id = int.Parse(temps[0]);
+                    string bundlename = temps[1];
+                    string md5 = temps[2];
+                    BundleData bd = new BundleData();
+                    bd.id = id;
+                    bd.name = bundlename;
+                    bd.md5 = md5;
+                    bundleList.bundles.Add(id, bd);
+                }
             }
         }
     }
@@ -157,8 +186,15 @@ public class Loader_Bundle : ResLoader, ResLoader_Stop
             else
             {
                 var ab = LoadAssetBundleWithDencies(bundleName);
-                AddToUnloadList(bundleName);
-                return ab.LoadAsset<T>(assetName);
+                if (ab!=null)
+                {
+                    AddToUnloadList(bundleName);
+                    return ab.LoadAsset<T>(assetName);
+                }
+                else
+                {
+                    return null;
+                }
             }
         }
     }
@@ -191,7 +227,13 @@ public class Loader_Bundle : ResLoader, ResLoader_Stop
     /// <returns></returns>
     private ABData LoadAssetBundle(string bundleName, bool useNum)
     {
-        var assetbundle = AssetBundle.LoadFromFile(Path.Combine(rootPath, bundleName));
+        var path = GetRealFilePath(bundleName);
+        if (string.IsNullOrEmpty(path))
+        {
+            Debug.LogError($"{bundleName} file is not exit");
+            return null;
+        }
+        var assetbundle = AssetBundle.LoadFromFile(path);
         ABData ab = ObjectPoolManager.Inst.GetObject<ABData>();
         ab.SetAssetBundle(assetbundle);
         abMap.Add(bundleName, ab);
@@ -311,21 +353,29 @@ public class Loader_Bundle : ResLoader, ResLoader_Stop
         else
         {
             loadingList.Add(bundleName);
-            var bundleLoad = AssetBundle.LoadFromFileAsync(Path.Combine(rootPath, bundleName));
-            yield return bundleLoad;
-            if (bundleLoad.assetBundle != null)
+            string path = GetRealFilePath(bundleName);
+            if (string.IsNullOrEmpty(path))
             {
-                ABData ab = ObjectPoolManager.Inst.GetObject<ABData>();
-                ab.SetAssetBundle(bundleLoad.assetBundle);
-                if (useNum)
+                Debug.LogError($"{bundleName} file is not exit");
+            }
+            else
+            {
+                var bundleLoad = AssetBundle.LoadFromFileAsync(path);
+                yield return bundleLoad;
+                if (bundleLoad.assetBundle != null)
                 {
-                    ab.Use();
+                    ABData ab = ObjectPoolManager.Inst.GetObject<ABData>();
+                    ab.SetAssetBundle(bundleLoad.assetBundle);
+                    if (useNum)
+                    {
+                        ab.Use();
+                    }
+
+                    abMap.Add(bundleName, ab);
                 }
 
-                abMap.Add(bundleName, ab);
+                loadingList.Remove(bundleName);
             }
-
-            loadingList.Remove(bundleName);
         }
     }
 

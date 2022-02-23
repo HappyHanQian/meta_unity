@@ -159,6 +159,10 @@ public class AssetBundleInfos
         for (int i = 0; i < deps.Length; i++)
         {
             string assetpath = deps[i];
+            if (!assetpath.StartsWith("Assets"))
+            {
+                continue;
+            }
             string fullpath = AssetTool.AssetPath2FullPath(assetpath);
             FileInfo f = new FileInfo(fullpath);
             if (f.Attributes == FileAttributes.Directory)
