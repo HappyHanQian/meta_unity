@@ -22,13 +22,13 @@ public class AB_Build_Window : EditorWindow
     {
     }
 
-    private Assets_GUI _assets;
+    private Assets_GUI _assets_GUI;
     private AssetBundleInfos _assetBundle;
     private Dictionary<string, string> customBundle = new Dictionary<string, string>();
 
     private void InitAsset()
     {
-        _assets = new Assets_GUI();
+        _assets_GUI = new Assets_GUI();
     }
 
     private void InitAssetBundle()
@@ -128,15 +128,10 @@ public class AB_Build_Window : EditorWindow
                 EditorUtility.DisplayDialog("提示", "ab包输出路径不能为空", "OK");
                 return;
             }
-
-            if (_assetBundle == null)
-            {
-                Creat();
-            }
-
-            var option = BuildAssetBundleOptions.ChunkBasedCompression |
-                         BuildAssetBundleOptions.DeterministicAssetBundle;
-            AssetBundleTool.BuildAssetBundles(_assetBundle, _buildPath, option, _buildTarget);
+            Creat();
+            string path = Path.Combine(_buildPath, _buildTarget.ToString());
+            var option = BuildAssetBundleOptions.ChunkBasedCompression | BuildAssetBundleOptions.DeterministicAssetBundle;
+            AssetBundleTool.BuildAssetBundles(_assetBundle, path, option, _buildTarget);
             EditorUtility.DisplayDialog("提示", "打包完成", "OK");
         }
 
@@ -158,7 +153,7 @@ public class AB_Build_Window : EditorWindow
     {
         InitAssetBundle();
         _assetBundle.Creat();
-        _assets.SetBundled(_assetBundle.bundlesDic);
+        _assets_GUI.SetBundled(_assetBundle.bundlesDic);
     }
 
     private void EditorBundle()
@@ -492,12 +487,12 @@ public class AB_Build_Window : EditorWindow
         _assetScroll = GUI.BeginScrollView(_assetViewRect, _assetScroll, _assetScrollRect);
         GUI.BeginGroup(_assetScrollRect, "", "Box");
         _assetViewHeight = 0;
-        if (_assets == null)
+        if (_assets_GUI == null)
         {
             InitAsset();
         }
 
-        AssetGUI(_assets.rootAsset, 0);
+        AssetGUI(_assets_GUI.rootAsset, 0);
         if (_assetViewHeight < _assetViewRect.height)
         {
             _assetViewHeight = (int) _assetViewRect.height;

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using UnityEngine;
+using UnityEngine.Networking;
 
 public class FileTool
 {
@@ -37,5 +38,23 @@ public class FileTool
         {
             Debug.LogError($"写入文件失败:{e.Message}");
         }
+    }
+    public static string LoadTxtFileByWWW(string srcPath)
+    {
+        string path = Application.platform == RuntimePlatform.Android ? srcPath : string.Format("file://{0}", srcPath);
+        UnityWebRequest www = new UnityWebRequest(path);
+        www.timeout = 10;
+        www.downloadHandler = new DownloadHandlerBuffer();
+        www.SendWebRequest();
+        while (!www.isDone)
+        {
+        }
+
+        if (!string.IsNullOrEmpty(www.error))
+        {
+            Debug.LogError($"loadPath:{path} error:{www.error}");
+            return "";
+        }
+        return www.downloadHandler.text;
     }
 }

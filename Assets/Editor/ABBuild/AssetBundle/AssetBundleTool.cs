@@ -89,15 +89,14 @@ public static class AssetBundleTool
         BuildAssetBundleOptions options, BuildTarget buildTarget)
     {
         Debug.Log("开始打包");
-        string path = Path.Combine(outPath, buildTarget.ToString());
-        if (!Directory.Exists(path))
+        if (!Directory.Exists(outPath))
         {
-            Directory.CreateDirectory(path);
+            Directory.CreateDirectory(outPath);
         }
 
         List<string> bundleNames = null;
         var bundles = assetBundleInfos.GetAssetBundleBuildInfo(out bundleNames);
-        DirectoryInfo di = new DirectoryInfo(path);
+        DirectoryInfo di = new DirectoryInfo(outPath);
         var files = di.GetFiles();
         for (int i = 0; i < files.Length; i++)
         {
@@ -114,8 +113,8 @@ public static class AssetBundleTool
             }
         }
 
-        var manifest = BuildPipeline.BuildAssetBundles(path, bundles, options, buildTarget);
-        CreaBuildFile(path, assetBundleInfos, manifest);
+        var manifest = BuildPipeline.BuildAssetBundles(outPath, bundles.ToArray(), options, buildTarget);
+        CreaBuildFile(outPath, assetBundleInfos);
         return manifest;
     }
 
@@ -125,12 +124,12 @@ public static class AssetBundleTool
     /// <param name="path"></param>
     /// <param name="assetBundleInfos"></param>
     /// <param name="manifest"></param>
-    public static void CreaBuildFile(string path, AssetBundleInfos assetBundleInfos, AssetBundleManifest manifest)
+    public static void CreaBuildFile(string path, AssetBundleInfos assetBundleInfos)
     {
-        manifest.GetAllAssetBundles();
         string handlepath = Path.Combine(path, "BundleList");
         Dictionary<string, Dictionary<string, int>> bundle_ids = new Dictionary<string, Dictionary<string, int>>();
         StringBuilder sb = new StringBuilder();
+        sb.AppendLine("0.0.0");
         var keys = assetBundleInfos.bundlesDic.Keys.ToArray();
         int id = 0;
         AddManifest(path, ref id, ref sb);
@@ -160,7 +159,6 @@ public static class AssetBundleTool
         }
 
         CreatFile(handlepath, sb.ToString());
-        CreatBundleInfoFile(path, assetBundleInfos, bundle_ids);
     }
 
     private static void AddManifest(string path, ref int id, ref StringBuilder sb)
@@ -174,7 +172,7 @@ public static class AssetBundleTool
     public static void CreatBundleInfoFile(string path, AssetBundleInfos assetBundleInfos,
         Dictionary<string, Dictionary<string, int>> bundleDic)
     {
-        string handlepath = Path.Combine(path, "BundldInfo");
+        string handlepath = Path.Combine(path, "BundleInfo.txt");
         StringBuilder sb = new StringBuilder();
         var keys = assetBundleInfos.allAssets.Keys.ToArray();
         for (int i = 0; i < keys.Length; i++)
@@ -206,7 +204,7 @@ public static class AssetBundleTool
         }
         catch (Exception ex)
         {
-            Debug.Log(ex.Message);
+            Debug.LogError(ex.Message);
             return "";
         }
     }

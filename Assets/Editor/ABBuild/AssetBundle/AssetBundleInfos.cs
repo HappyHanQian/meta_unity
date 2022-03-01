@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 
@@ -47,9 +49,13 @@ public class AssetBundleInfos
     /// </summary>
     public void Creat()
     {
+        DeleteBundleInfo();
         CreatAllAsset(Application.dataPath);
         CreatAssetBundls();
+        CreatBundleInfo();
+        AssetDatabase.Refresh();
     }
+
 
     private void CreatAssetBundls()
     {
@@ -61,30 +67,35 @@ public class AssetBundleInfos
             // {
             //     continue;
             // }
-            if (bundlesDic.ContainsKey(value.bundled))
+            AddToBundleDic(value);
+        }
+    }
+
+    private void AddToBundleDic(Asset_Bundle value)
+    {
+        if (bundlesDic.ContainsKey(value.bundled))
+        {
+            var variant = bundlesDic[value.bundled];
+            if (variant.ContainsKey(value.variant))
             {
-                var variant = bundlesDic[value.bundled];
-                if (variant.ContainsKey(value.variant))
-                {
-                    variant[value.variant].AddAsset(value);
-                }
-                else
-                {
-                    AssetBundleInfo ab = new AssetBundleInfo(value.bundled, value.variant);
-                    ab.AddAsset(value);
-                    variant.Add(ab.variant, ab);
-                    totalBundleNum++;
-                }
+                variant[value.variant].AddAsset(value);
             }
             else
             {
-                Dictionary<string, AssetBundleInfo> temp = new Dictionary<string, AssetBundleInfo>();
                 AssetBundleInfo ab = new AssetBundleInfo(value.bundled, value.variant);
                 ab.AddAsset(value);
-                temp.Add(ab.variant, ab);
-                bundlesDic.Add(ab.name, temp);
+                variant.Add(ab.variant, ab);
                 totalBundleNum++;
             }
+        }
+        else
+        {
+            Dictionary<string, AssetBundleInfo> temp = new Dictionary<string, AssetBundleInfo>();
+            AssetBundleInfo ab = new AssetBundleInfo(value.bundled, value.variant);
+            ab.AddAsset(value);
+            temp.Add(ab.variant, ab);
+            bundlesDic.Add(ab.name, temp);
+            totalBundleNum++;
         }
     }
 
@@ -137,7 +148,59 @@ public class AssetBundleInfos
         }
 
         EditorUtility.ClearProgressBar();
-        AssetDatabase.SaveAssets();
+    }
+
+    private void DeleteBundleInfo()
+    {
+        string path = Path.Combine(Application.dataPath, "BundleInfo.txt");
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+        }
+    }
+
+    private void CreatBundleInfo()
+    {
+        Dictionary<string, Dictionary<string, int>> bundle_ids = new Dictionary<string, Dictionary<string, int>>();
+        var keys = bundlesDic.Keys.ToArray();
+        int id = 1; //id为0的bundle为manifest bundle
+        for (int i = 0; i < keys.Length; i++)
+        {
+            var key = keys[i];
+            var variantKeys = bundlesDic[key].Keys.ToArray();
+            for (int j = 0; j < variantKeys.Length; j++)
+            {
+                var variant_key = variantKeys[j];
+                if (bundle_ids.ContainsKey(key))
+                {
+                    bundle_ids[key].Add(variant_key, id);
+                }
+                else
+                {
+                    Dictionary<string, int> variantDic = new Dictionary<string, int>();
+                    variantDic.Add(variant_key, id);
+                    bundle_ids.Add(key, variantDic);
+                }
+
+                id++;
+            }
+        }
+        AssetBundleTool.CreatBundleInfoFile(Application.dataPath, this, bundle_ids);
+        FileInfo f = new FileInfo(Path.Combine(Application.dataPath, "BundleInfo.txt"));
+        Asset_Bundle info = new Asset_Bundle(f.FullName, f.Name, f.Extension);
+        info.SetAssetBundleNameBuRule();
+        if (!bundle_ids.ContainsKey(info.bundled))
+        {
+            Dictionary<string, int> tem = new Dictionary<string, int>();
+            tem.Add(info.variant, id);
+            bundle_ids.Add(info.bundled, tem);
+        }
+
+        if (!allAssets.ContainsKey(info.assetPath))
+        {
+            allAssets.Add(info.assetPath, info);
+            AddToBundleDic(info);
+        }
     }
 
     /// <summary>
@@ -163,6 +226,7 @@ public class AssetBundleInfos
             {
                 continue;
             }
+
             string fullpath = AssetTool.AssetPath2FullPath(assetpath);
             FileInfo f = new FileInfo(fullpath);
             if (f.Attributes == FileAttributes.Directory)
@@ -191,7 +255,7 @@ public class AssetBundleInfos
         }
     }
 
-    public AssetBundleBuild[] GetAssetBundleBuildInfo(out List<string> abNames)
+    public List<AssetBundleBuild> GetAssetBundleBuildInfo(out List<string> abNames)
     {
         if (bundlesDic.Count <= 0)
         {
@@ -199,8 +263,7 @@ public class AssetBundleInfos
         }
 
         abNames = new List<string>();
-        AssetBundleBuild[] bundles = new AssetBundleBuild[bundlesDic.Count];
-        int index = 0;
+        List<AssetBundleBuild> bundles = new List<AssetBundleBuild>();
         foreach (var bundleNames in bundlesDic)
         {
             foreach (var bundleInfo in bundleNames.Value)
@@ -217,8 +280,7 @@ public class AssetBundleInfos
                     b.assetNames[i] = bundleInfo.Value.assets[i].assetPath;
                 }
 
-                bundles[index] = b;
-                index++;
+                bundles.Add(b);
             }
         }
 
